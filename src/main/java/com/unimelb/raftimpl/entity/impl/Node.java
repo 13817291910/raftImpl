@@ -4,6 +4,8 @@ import com.unimelb.raftimpl.entity.Server;
 import com.unimelb.raftimpl.enumerate.NodeStatus;
 import lombok.Getter;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +16,8 @@ import java.util.Map;
 @Getter
 @Setter
 public class Node {
+
+    private static final Logger log = LoggerFactory.getLogger(Node.class);
     /**
      * This is the persistent state on all servers
      */
@@ -39,12 +43,6 @@ public class Node {
 
     @Autowired
     public Server server;
-
-    @PostConstruct
-    public void init(){
-        new Thread(()->server.start());
-    }
-
 
 
 }

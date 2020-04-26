@@ -9,16 +9,23 @@ import org.apache.thrift.server.TServer;
 import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TNonblockingServerSocket;
 import org.apache.thrift.transport.TTransportException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
 
 @Component
 public class Server {
 
-    private final static int DEFAULT_PORT = 100001;
+    private static final Logger log = LoggerFactory.getLogger(Server.class);
+    private final static int DEFAULT_PORT = 8083;
     private static TServer server = null;
 
+    @PostConstruct
     public void start(){
         try {
+            log.info("111");
             TNonblockingServerSocket socket = new TNonblockingServerSocket(DEFAULT_PORT);
             Consensus.Processor processor = new Consensus.Processor(new ConsensusImpl());
             TNonblockingServer.Args args = new TNonblockingServer.Args(socket);
@@ -26,7 +33,8 @@ public class Server {
             args.transportFactory(new TFramedTransport.Factory());
             args.processorFactory(new TProcessorFactory(processor));
             server = new TNonblockingServer(args);
-            server.serve();
+            log.info("server starts at port {}",DEFAULT_PORT);
+            new Thread(()->server.serve()).start();
         } catch (TTransportException e) {
             e.printStackTrace();
         }
