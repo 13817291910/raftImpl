@@ -1,8 +1,10 @@
 package com.unimelb.raftimpl.controller;
 
 import com.unimelb.raftimpl.entity.CommonMsg;
+import com.unimelb.raftimpl.entity.LogModule;
 import com.unimelb.raftimpl.entity.impl.Node;
 import com.unimelb.raftimpl.rpc.Consensus;
+import com.unimelb.raftimpl.rpc.LogEntry;
 import com.unimelb.raftimpl.rpc.VoteResult;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
@@ -25,6 +27,8 @@ public class MainController {
     @Autowired
     private Node node;
 
+    @Autowired
+    private LogModule logModule;
 
     @RequestMapping("/send")
     CommonMsg send(@RequestParam String text){
@@ -37,6 +41,7 @@ public class MainController {
                 VoteResult voteResult = thriftClient.handleRequestVote(0,0,0,0);
                 log.info("VoteResult is {} {}",voteResult.getTerm(),voteResult.isVoteGranted());
                 //TODO: thriftClient.handleAppendEntries()
+                LogEntry logEntry = new LogEntry(0,1,"");
             } catch (Exception e) {
                 log.error("thriftClient init fails");
                 e.printStackTrace();

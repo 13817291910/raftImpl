@@ -22,6 +22,8 @@ public class ConsensusImpl implements Consensus.Iface {
     @Override
     public VoteResult handleRequestVote(int term, int candidateId, long lastLogIndex, int lastLogTerm) throws TException {
         log.info("method handleRequestVote succeed in invoking");
-        return new VoteResult(11111,true);
+        return new VoteResult(term,true);
     }
+
+
 }

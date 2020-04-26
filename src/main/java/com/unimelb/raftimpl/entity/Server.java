@@ -4,6 +4,7 @@ import com.unimelb.raftimpl.rpc.Consensus;
 import com.unimelb.raftimpl.rpc.impl.ConsensusImpl;
 import org.apache.thrift.TProcessorFactory;
 import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.server.THsHaServer;
 import org.apache.thrift.server.TNonblockingServer;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.transport.TFramedTransport;
@@ -25,14 +26,13 @@ public class Server {
     @PostConstruct
     public void start(){
         try {
-            log.info("111");
             TNonblockingServerSocket socket = new TNonblockingServerSocket(DEFAULT_PORT);
             Consensus.Processor processor = new Consensus.Processor(new ConsensusImpl());
-            TNonblockingServer.Args args = new TNonblockingServer.Args(socket);
+            THsHaServer.Args args = new THsHaServer.Args(socket);
             args.protocolFactory(new TBinaryProtocol.Factory());
             args.transportFactory(new TFramedTransport.Factory());
             args.processorFactory(new TProcessorFactory(processor));
-            server = new TNonblockingServer(args);
+            server = new THsHaServer(args);
             log.info("server starts at port {}",DEFAULT_PORT);
             new Thread(()->server.serve()).start();
         } catch (TTransportException e) {
