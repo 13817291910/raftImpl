@@ -3,6 +3,7 @@ package com.unimelb.raftimpl.controller;
 import com.unimelb.raftimpl.entity.CommonMsg;
 import com.unimelb.raftimpl.entity.LogModule;
 import com.unimelb.raftimpl.entity.impl.Node;
+import com.unimelb.raftimpl.entity.impl.Peer;
 import com.unimelb.raftimpl.rpc.Consensus;
 import com.unimelb.raftimpl.rpc.LogEntry;
 import com.unimelb.raftimpl.rpc.VoteResult;
@@ -18,6 +19,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Controller
 public class MainController {
@@ -67,6 +74,8 @@ public class MainController {
             return null;
         }
     }
+
+
 
 
 }
