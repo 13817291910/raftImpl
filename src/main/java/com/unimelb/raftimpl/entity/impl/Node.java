@@ -14,9 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -29,7 +27,7 @@ public class Node {
     /**
      * This is the persistent state on all servers
      */
-    private volatile long currentTerm;
+    private volatile int currentTerm;
 
     private volatile Integer votedFor;
 
@@ -39,9 +37,9 @@ public class Node {
 
     private volatile long lastApplied;
 
-    private Map<Peer,Long> nextIndex;
+    private Map<Peer,Long> nextIndexes;
 
-    private Map<Peer,Long> matchIndex;
+    private Map<Peer,Long> matchIndexes;
 
     private NodeStatus nodeStatus;
 
@@ -68,6 +66,8 @@ public class Node {
         *@Date: 2020/4/27
      */
     private synchronized void handleRequest(LogEntry logEntry, Consensus.Client client){
+
+
         logModule.write(logEntry);
         List<Future<Boolean>> futureList = new CopyOnWriteArrayList<>();
         List<Boolean> resultList = new CopyOnWriteArrayList<>();
@@ -101,6 +101,26 @@ public class Node {
             e.printStackTrace();
         }
 
+        /*
+            *  Do as the paper said,If there exists an N such that N > commitIndex,
+            *  a majority of matchIndex[i] ≥ N, and log[N].term == currentTerm:
+            *  set commitIndex = N
+        * */
+        List<Long> matchedIndexList = new ArrayList<>(matchIndexes.values());
+        long median = 0;
+        int medianIndex = 0;
+        if(matchedIndexList.size() >= 2){
+            Collections.sort(matchedIndexList);
+            medianIndex = matchedIndexList.size() / 2;
+        }
+        median = matchedIndexList.get(medianIndex);
+        if(median > commitIndex){
+            LogEntry entry = logModule.read(median);
+            if(entry != null && entry.getTerm() == currentTerm){
+                commitIndex = median;
+            }
+        }
+
 
         for(Boolean result:resultList){
             if(result == true){
@@ -115,12 +135,32 @@ public class Node {
         }else{
             //TODO: 失败后是重试还是直接返回错误待讨论
         }
+
     }
 
     private Future<Boolean> replicateToSlave(Peer slave,LogEntry logEntry){
         return ThreadPoolManager.getInstance().submit(new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
+                //Compute all the parameters that rpc method handleAppendEntries needs
+                int term = currentTerm;
+                long leaderCommit = commitIndex;
+                long nextIndex = nextIndexes.get(slave);
+                LinkedList<LogEntry> entries = new LinkedList<>();
+                if(logEntry.getIdex() >= nextIndex){
+                    for(long i = nextIndex; i <= logEntry.getIdex();i++){
+                        LogEntry curEntry = logModule.read(i);
+                        if(curEntry!=null) entries.add(curEntry);
+                    }
+                }else{
+                    entries.add(logEntry);
+                }
+
+                LogEntry prevLogEntry = logModule.getPrev(logEntry);
+                //TODO: 初始化的时候prev是空，这里的逻辑还没做，以及接收rpc的结果
+                long prevLogIndex = prevLogEntry.getIdex();
+                int prevLogTerm = prevLogEntry.getTerm();
+
                 return true;
             }
         });
