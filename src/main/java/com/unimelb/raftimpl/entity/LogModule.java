@@ -1,6 +1,8 @@
 package com.unimelb.raftimpl.entity;
 
 import com.unimelb.raftimpl.rpc.LogEntry;
+import lombok.Getter;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -19,13 +21,15 @@ import java.util.concurrent.locks.ReentrantLock;
  **/
 
 @Component
+@Getter
+@Setter
 public class LogModule {
 
     private static final Logger log = LoggerFactory.getLogger(LogModule.class);
 
     private static final LogModule logModule = new LogModule();
 
-    private static List<LogEntry> logEntryList = new LinkedList<>();
+    public static List<LogEntry> logEntryList = new LinkedList<>();
 
     private final Lock lock = new ReentrantLock(true);
 

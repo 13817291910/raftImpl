@@ -7,6 +7,7 @@ import lombok.Setter;
 @Setter
 public class Peer {
 
-    private String address;
+    private String host;
+    private int port;
 
 }

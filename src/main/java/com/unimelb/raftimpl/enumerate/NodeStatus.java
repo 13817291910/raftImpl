@@ -10,5 +10,4 @@ public enum NodeStatus {
         this.code = code;
     }
 
-
 }

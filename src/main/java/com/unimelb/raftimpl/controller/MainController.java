@@ -7,6 +7,7 @@ import com.unimelb.raftimpl.entity.impl.Peer;
 import com.unimelb.raftimpl.rpc.Consensus;
 import com.unimelb.raftimpl.rpc.LogEntry;
 import com.unimelb.raftimpl.rpc.VoteResult;
+import com.unimelb.raftimpl.util.GetTTransport;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TFramedTransport;
@@ -42,7 +43,7 @@ public class MainController {
         log.info("the front end send the text {}",text);
         TTransport tTransport = null;
             try {
-                tTransport = getTTransport("192.168.0.116",8083,5000);
+                tTransport = GetTTransport.getTTransport("192.168.0.116",8083,5000);
                 TProtocol protocol = new TBinaryProtocol(tTransport);
                 Consensus.Client thriftClient = new Consensus.Client(protocol);
                 VoteResult voteResult = thriftClient.handleRequestVote(0,0,0,0);
@@ -52,30 +53,11 @@ public class MainController {
             } catch (Exception e) {
                 log.error("thriftClient init fails");
                 e.printStackTrace();
-            }finally {
+            } finally {
                 if(tTransport!=null) tTransport.close();
             }
 
         return null;
     }
-
-
-
-    private TTransport getTTransport(String host,int port,int timeout){
-        try {
-            TSocket tsocket = new TSocket(host,port,timeout);
-            TTransport tTransport = new TFramedTransport(tsocket);
-            if(!tTransport.isOpen()){
-                tTransport.open();
-            }
-            return tTransport;
-        } catch (TTransportException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-
-
 
 }
