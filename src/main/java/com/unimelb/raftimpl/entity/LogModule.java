@@ -60,4 +60,13 @@ public class LogModule {
         }
     }
 
+    public LogEntry read(long index){
+        return logEntryList.get((int)index);
+    }
+
+    public LogEntry getPrev(LogEntry logEntry){
+        LogEntry prevLogEntry = read(logEntry.getIdex()-1);
+        return prevLogEntry==null?null:prevLogEntry;
+    }
+
 }
