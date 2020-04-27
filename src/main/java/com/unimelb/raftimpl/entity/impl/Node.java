@@ -59,6 +59,14 @@ public class Node {
     @Autowired
     private LogModule logModule;
 
+    /**
+        *@Description: The master server use this method to transfer the front end dialogues
+         *              to logEntry, and replicate them to the slave servers.
+        *@Param: [logEntry, client]
+        *@return: void
+        *@Author: di kan
+        *@Date: 2020/4/27
+     */
     private synchronized void handleRequest(LogEntry logEntry, Consensus.Client client){
         logModule.write(logEntry);
         List<Future<Boolean>> futureList = new CopyOnWriteArrayList<>();
