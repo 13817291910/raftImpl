@@ -20,9 +20,9 @@ struct LogEntry{
 
 service Consensus {
 
-    AppendResult handleAppendEntries(1:i32 term,2:i32 leaderId,3:i64 prevLogIndex,4:i32 prevLogTerm,5:list<LogEntry> entries,6:i64 leaderCommit);
+    AppendResult handleAppendEntries(1:i32 term,2:string leaderId,3:i64 prevLogIndex,4:i32 prevLogTerm,5:list<LogEntry> entries,6:i64 leaderCommit);
 
-    VoteResult handleRequestVote(1:i32 term,2:i32 candidateId,3:i64 lastLogIndex,4:i32 lastLogTerm);
+    VoteResult handleRequestVote(1:i32 term,2:string candidateId,3:i64 lastLogIndex,4:i32 lastLogTerm);
 
 
 }

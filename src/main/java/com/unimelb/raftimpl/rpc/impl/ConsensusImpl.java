@@ -21,7 +21,7 @@ public class ConsensusImpl implements Consensus.Iface {
     private Node node;
 
     @Override
-    public AppendResult handleAppendEntries(int term, int leaderId, long prevLogIndex, int prevLogTerm, List<LogEntry> entries, long leaderCommit) throws TException {
+    public AppendResult handleAppendEntries(int term, String leaderId, long prevLogIndex, int prevLogTerm, List<LogEntry> entries, long leaderCommit) throws TException {
         AppendResult result = new AppendResult();
         if (checkValidMsg()) {
             if (entries == null) {
@@ -41,7 +41,7 @@ public class ConsensusImpl implements Consensus.Iface {
     }
 
     @Override
-    public VoteResult handleRequestVote(int term, int candidateId, long lastLogIndex, int lastLogTerm) throws TException {
+    public VoteResult handleRequestVote(int term, String candidateId, long lastLogIndex, int lastLogTerm) throws TException {
         log.info("method handleRequestVote succeed in invoking");
         return new VoteResult(term,true);
     }

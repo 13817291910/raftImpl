@@ -14,6 +14,7 @@ import com.unimelb.raftimpl.util.NumberGenerator;
 import com.unimelb.raftimpl.util.TimeCounter;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TTransport;
@@ -130,7 +131,12 @@ public class Node {
         TProtocol protocol = new TBinaryProtocol(tTransport);
         Consensus.Client thriftClient = new Consensus.Client(protocol);
 
-        VoteResult voteResult = thriftClient.handleRequestVote(currentTerm,self.getHost(),lastLogIndex,lastLogTerm);
+        VoteResult voteResult = null;
+        try {
+            voteResult = thriftClient.handleRequestVote(currentTerm,self.getHost(),lastLogIndex,lastLogTerm);
+        } catch (TException e) {
+            e.printStackTrace();
+        }
         if (voteResult.voteGranted) {
             return 1;
         }
@@ -150,7 +156,8 @@ public class Node {
                             tTransport = GetTTransport.getTTransport(host, port, 1000);
                             TProtocol protocol = new TBinaryProtocol(tTransport);
                             Consensus.Client thriftClient = new Consensus.Client(protocol);
-                            AppendResult appendResult = thriftClient.handleAppendEntries(currentTerm, host, , );
+                             //TOdo:  reconsider the appendEntries parameter
+                            //  AppendResult appendResult = thriftClient.handleAppendEntries(currentTerm, host, , );
                         } catch (Exception e) {
                             log.info(e.toString());
                         } finally {

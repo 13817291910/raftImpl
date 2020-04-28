@@ -3,29 +3,19 @@ package com.unimelb.raftimpl.controller;
 import com.unimelb.raftimpl.entity.CommonMsg;
 import com.unimelb.raftimpl.entity.LogModule;
 import com.unimelb.raftimpl.entity.impl.Node;
-import com.unimelb.raftimpl.entity.impl.Peer;
 import com.unimelb.raftimpl.rpc.Consensus;
 import com.unimelb.raftimpl.rpc.LogEntry;
 import com.unimelb.raftimpl.rpc.VoteResult;
 import com.unimelb.raftimpl.util.GetTTransport;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.transport.TFramedTransport;
-import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
-import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Controller
 public class MainController {
@@ -46,7 +36,7 @@ public class MainController {
                 tTransport = GetTTransport.getTTransport("192.168.0.116",8083,5000);
                 TProtocol protocol = new TBinaryProtocol(tTransport);
                 Consensus.Client thriftClient = new Consensus.Client(protocol);
-                VoteResult voteResult = thriftClient.handleRequestVote(0,0,0,0);
+                VoteResult voteResult = thriftClient.handleRequestVote(0,"",0,0);
                 log.info("VoteResult is {} {}",voteResult.getTerm(),voteResult.isVoteGranted());
                 //TODO: thriftClient.handleAppendEntries()
                 LogEntry logEntry = new LogEntry(0,1,"");
