@@ -41,8 +41,21 @@ public class ConsensusImpl implements Consensus.Iface {
 
     @Override
     public VoteResult handleRequestVote(int term, String candidateId, long lastLogIndex, int lastLogTerm) throws TException {
-        log.info("method handleRequestVote succeed in invoking");
-        return new VoteResult(term,true);
+        VoteResult voteResult = new VoteResult();
+        voteResult.setTerm(node.getCurrentTerm());
+        voteResult.setVoteGranted(false);
+        if (term > node.getCurrentTerm()) {
+            if (lastLogIndex >= node.getCommitIndex()) {
+                LogEntry temp = node.getLogModule().getLastLogEntry();
+                if (lastLogTerm >= temp.getTerm()) {
+                    node.setCurrentTerm(node.getCurrentTerm() + 1);
+                    voteResult.setTerm(node.getCurrentTerm());
+                    voteResult.setVoteGranted(true);
+                    node.setVotedFor(candidateId);
+                }
+            }
+        }
+        return voteResult;
     }
 
     private boolean checkValidMsg() {

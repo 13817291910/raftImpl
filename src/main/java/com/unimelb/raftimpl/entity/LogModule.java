@@ -67,4 +67,8 @@ public class LogModule {
         return prevLogEntry==null?null:prevLogEntry;
     }
 
+    public LogEntry getLastLogEntry() {
+        return logEntryList.get(logEntryList.size() - 1);
+    }
+
 }
