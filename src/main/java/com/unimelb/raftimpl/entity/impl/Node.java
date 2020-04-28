@@ -4,7 +4,6 @@ import com.unimelb.raftimpl.entity.LogModule;
 import com.unimelb.raftimpl.entity.Server;
 import com.unimelb.raftimpl.entity.StateMachine;
 import com.unimelb.raftimpl.enumerate.NodeStatus;
-import com.unimelb.raftimpl.rpc.AppendResult;
 import com.unimelb.raftimpl.rpc.Consensus;
 import com.unimelb.raftimpl.rpc.LogEntry;
 import com.unimelb.raftimpl.rpc.VoteResult;
@@ -68,7 +67,7 @@ public class Node {
     private LogModule logModule;
 
     private long electiontimeout;
-    private long startTime;
+    private volatile long startTime;
     private volatile int voteCount;
 
     public void startPeer() {
@@ -94,7 +93,6 @@ public class Node {
     private void candidateWork() {
         voteCount = 0;
         long voteStartTime = System.currentTimeMillis();
-        ConcurrentHashMap<String, Boolean> voteResultSet = new ConcurrentHashMap<>();
         currentTerm = currentTerm + 1;
         votedFor = self.getHost();
         List<LogEntry> logEntryList = LogModule.logEntryList;

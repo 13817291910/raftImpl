@@ -34,7 +34,7 @@ public class ConsensusImpl implements Consensus.Iface {
             }
         } else {
             result.success = false;
-            result.term = (int) Math.max(term, node.getCurrentTerm());
+            result.term = Math.max(term, node.getCurrentTerm());
         }
         return result;
     }
