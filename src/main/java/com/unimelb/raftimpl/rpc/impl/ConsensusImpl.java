@@ -33,7 +33,6 @@ public class ConsensusImpl implements Consensus.Iface {
                 // todo
             }
         } else {
-            node.setNodeStatus(NodeStatus.FOLLOWER);
             result.success = false;
             result.term = (int) Math.max(term, node.getCurrentTerm());
         }

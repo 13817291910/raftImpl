@@ -156,8 +156,11 @@ public class Node {
                             tTransport = GetTTransport.getTTransport(host, port, 1000);
                             TProtocol protocol = new TBinaryProtocol(tTransport);
                             Consensus.Client thriftClient = new Consensus.Client(protocol);
-                             //TOdo:  reconsider the appendEntries parameter
+                            //TOdo:  reconsider the appendEntries parameter
                             //  AppendResult appendResult = thriftClient.handleAppendEntries(currentTerm, host, , );
+                            //if (!appendResult.success) {
+                            //    nodeStatus = NodeStatus.FOLLOWER;
+                            //}
                         } catch (Exception e) {
                             log.info(e.toString());
                         } finally {
