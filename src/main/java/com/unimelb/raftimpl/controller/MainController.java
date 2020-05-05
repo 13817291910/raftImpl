@@ -38,7 +38,11 @@ public class MainController {
                 Consensus.Client thriftClient = new Consensus.Client(protocol);
                 VoteResult voteResult = thriftClient.handleRequestVote(0,"",0,0);
                 log.info("VoteResult is {} {}",voteResult.getTerm(),voteResult.isVoteGranted());
-                //TODO: thriftClient.handleAppendEntries()
+                //TODO: thriftClient.handleAppendEntries(
+
+                LogEntry curEntry = new LogEntry();
+                curEntry.setText(text);
+                node.handleRequest(curEntry,thriftClient);
                 LogEntry logEntry = new LogEntry(0,1,"");
             } catch (Exception e) {
                 log.error("thriftClient init fails");

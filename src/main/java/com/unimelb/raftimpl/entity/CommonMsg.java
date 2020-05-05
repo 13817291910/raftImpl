@@ -1,10 +1,12 @@
 package com.unimelb.raftimpl.entity;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@Builder
 /**
 *@Description: This class is a unified encapsulation of the results
                 returned to the front end

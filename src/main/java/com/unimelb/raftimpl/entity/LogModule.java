@@ -71,4 +71,20 @@ public class LogModule {
         return logEntryList.get(logEntryList.size() - 1);
     }
 
+    public boolean delete(long index){
+        try {
+            lock.lock();
+            int length = logEntryList.size();
+            for(int i = 0;i<length - index;i++){
+                logEntryList.remove(logEntryList.size()-1);
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            lock.unlock();
+        }
+    }
+
 }
