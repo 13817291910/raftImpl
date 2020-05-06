@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface StateMachine {
     void apply(LogEntry logEntry);
-    List<LogEntry> read();
+    List<Log> read();
 }
