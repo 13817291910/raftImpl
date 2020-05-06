@@ -54,4 +54,11 @@ public class MainController {
         return null;
     }
 
+    @RequestMapping("/read")
+    CommonMsg read(){
+        String text = LogModule.logEntryList.toString();
+        CommonMsg msg = CommonMsg.builder().msg(text).build();
+        return msg;
+    }
+
 }

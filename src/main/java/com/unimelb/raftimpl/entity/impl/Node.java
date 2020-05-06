@@ -1,5 +1,6 @@
 package com.unimelb.raftimpl.entity.impl;
 
+import com.unimelb.raftimpl.config.PeerConfig;
 import com.unimelb.raftimpl.entity.CommonMsg;
 import com.unimelb.raftimpl.entity.LogModule;
 import com.unimelb.raftimpl.entity.Server;
@@ -23,8 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import javax.validation.constraints.Null;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -64,6 +63,9 @@ public class Node {
     @Autowired
     public Server server;
 
+    @Autowired
+    private PeerConfig peerConfig;
+
     private Set<Peer> peerSet;
 
     private StateMachine stateMachine;
@@ -77,6 +79,20 @@ public class Node {
 
     public void startPeer() {
         electiontimeout = (long) NumberGenerator.generateNumber(200, 500);
+        String[] peersIp = peerConfig.getPeersIp();
+        int[] peersPort = peerConfig.getPeersPort();
+        nextIndexes = new HashMap<>();
+        matchIndexes = new HashMap<>();
+        peerSet = new HashSet<>();
+        for(int i=0;i<peersIp.length;i++){
+            Peer curPeer = new Peer(peersIp[i],peersPort[i]);
+            peerSet.add(curPeer);
+            matchIndexes.put(curPeer,0L);
+            nextIndexes.put(curPeer,0L);
+
+        }
+        currentTerm = 0;
+        lastApplied = 0;
         while (true) {
             if (nodeStatus == NodeStatus.FOLLOWER) {
                 followerWork();
