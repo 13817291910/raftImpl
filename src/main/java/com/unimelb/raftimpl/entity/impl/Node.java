@@ -24,6 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -77,8 +79,12 @@ public class Node {
     private volatile long startTime;
     private volatile int voteCount;
 
+    @PostConstruct
     public void startPeer() {
+        log.info("startPeer is starting");
+        self = new Peer(peerConfig.getSelfIp(),peerConfig.getSelfPort());
         electiontimeout = (long) NumberGenerator.generateNumber(200, 500);
+        nodeStatus = NodeStatus.FOLLOWER;
         String[] peersIp = peerConfig.getPeersIp();
         int[] peersPort = peerConfig.getPeersPort();
         nextIndexes = new HashMap<>();
@@ -89,10 +95,11 @@ public class Node {
             peerSet.add(curPeer);
             matchIndexes.put(curPeer,0L);
             nextIndexes.put(curPeer,0L);
-
         }
+        log.info("the connected peers are {}",peerSet.toString());
         currentTerm = 0;
         lastApplied = 0;
+        startTime = System.currentTimeMillis();
         while (true) {
             if (nodeStatus == NodeStatus.FOLLOWER) {
                 followerWork();
@@ -105,8 +112,7 @@ public class Node {
     }
 
     private void followerWork() {
-        startTime = System.currentTimeMillis();
-        if (!TimeCounter.checkTimeout(startTime, heartBeat) && !TimeCounter.checkTimeout(startTime, electiontimeout)) {
+        if (TimeCounter.checkTimeout(startTime, heartBeat) && TimeCounter.checkTimeout(startTime, electiontimeout)) {
             nodeStatus = NodeStatus.CANDIDATE;
         }
     }
@@ -115,16 +121,23 @@ public class Node {
         voteCount = 0;
         long voteStartTime = System.currentTimeMillis();
         currentTerm = currentTerm + 1;
-        votedFor = self.getHost();
+        votedFor = peerConfig.getSelfIp();
         List<LogEntry> logEntryList = LogModule.logEntryList;
-        LogEntry logEntry = logEntryList.get(logEntryList.size() - 1);
-        int lastLogTerm = logEntry.getTerm();
-        long lastLogIndex = logEntry.getIdex();
-        TTransport tTransport = null;
+        int lastLogTerm;
+        long lastLogIndex;
+        if(logEntryList.size()==0){
+            lastLogTerm = 0;
+            lastLogIndex = 0;
+        }else{
+            LogEntry logEntry = logModule.getLastLogEntry();
+            lastLogTerm = logEntry.getTerm();
+            lastLogIndex = logEntry.getIdex();
+        }
         for (Peer peer: peerSet) {
+            TTransport tTransport = GetTTransport.getTTransport(peer.getHost(),peer.getPort(),3000);
             try {
                 new Thread(() -> {
-                    int score = handleVoted(tTransport, peer, lastLogTerm, lastLogIndex);
+                    int score = handleVoted(tTransport, lastLogTerm, lastLogIndex);
                     voteCount += score;
                 }).start();
             } catch (Exception e) {
@@ -133,26 +146,24 @@ public class Node {
                 tTransport.close();
             }
         }
+        log.info("{}:{} vote count is {}",peerConfig.getSelfIp(),peerConfig.getPeersPort(),voteCount);
         while (true) {
             if (TimeCounter.checkTimeout(voteStartTime, electiontimeout + 1000)) {
                 if (voteCount >= (peerSet.size() / 2) + 1) {
                     nodeStatus = NodeStatus.LEADER;
+                    log.info("{}:{} becomes leader",peerConfig.getSelfIp(),peerConfig.getPeersPort());
                 }
                 break;
             }
         }
     }
 
-    private int handleVoted(TTransport tTransport, Peer peer, int lastLogTerm, long lastLogIndex) {
-        String host = peer.getHost();
-        int port = peer.getPort();
-        tTransport = GetTTransport.getTTransport(host, port, 1000);
+    private int handleVoted(TTransport tTransport, int lastLogTerm, long lastLogIndex) {
         TProtocol protocol = new TBinaryProtocol(tTransport);
         Consensus.Client thriftClient = new Consensus.Client(protocol);
-
         VoteResult voteResult = null;
         try {
-            voteResult = thriftClient.handleRequestVote(currentTerm,self.getHost(),lastLogIndex,lastLogTerm);
+            voteResult = thriftClient.handleRequestVote(currentTerm,peerConfig.getSelfIp(),lastLogIndex,lastLogTerm);
         } catch (TException e) {
             e.printStackTrace();
         }
@@ -173,7 +184,7 @@ public class Node {
                         try {
                             String host = peer.getHost();
                             int port = peer.getPort();
-                            tTransport = GetTTransport.getTTransport(host, port, 1000);
+                            tTransport = GetTTransport.getTTransport(host, port, 2000);
                             TProtocol protocol = new TBinaryProtocol(tTransport);
                             Consensus.Client thriftClient = new Consensus.Client(protocol);
                             long lastLogIndex = lastOne.getIdex();

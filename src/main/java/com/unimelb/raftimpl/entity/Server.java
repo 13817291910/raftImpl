@@ -11,6 +11,7 @@ import org.apache.thrift.transport.TNonblockingServerSocket;
 import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -19,7 +20,10 @@ import javax.annotation.PostConstruct;
 public class Server {
 
     private static final Logger log = LoggerFactory.getLogger(Server.class);
-    private final static int DEFAULT_PORT = 8083;
+
+    @Value("${self.port}")
+    private int DEFAULT_PORT;
+
     private static TServer server = null;
 
     @PostConstruct
