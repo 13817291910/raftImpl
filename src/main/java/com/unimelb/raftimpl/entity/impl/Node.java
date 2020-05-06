@@ -23,6 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import javax.validation.constraints.Null;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Getter
 @Setter
 public class Node {
+    private final static List<LogEntry> heartBeatMessage = null;
 
     private static final Logger log = LoggerFactory.getLogger(Node.class);
     /**
@@ -147,6 +150,7 @@ public class Node {
         long leaderTime = System.currentTimeMillis();
         while (true) {
             if (TimeCounter.checkTimeout(leaderTime, heartBeat)) {
+                LogEntry lastOne = logModule.getLastLogEntry();
                 for (Peer peer: peerSet) {
                     new Thread(() -> {
                         TTransport tTransport = null;
@@ -156,11 +160,12 @@ public class Node {
                             tTransport = GetTTransport.getTTransport(host, port, 1000);
                             TProtocol protocol = new TBinaryProtocol(tTransport);
                             Consensus.Client thriftClient = new Consensus.Client(protocol);
-                            //TOdo:  reconsider the appendEntries parameter
-                            //  AppendResult appendResult = thriftClient.handleAppendEntries(currentTerm, host, , );
-                            //if (!appendResult.success) {
-                            //    nodeStatus = NodeStatus.FOLLOWER;
-                            //}
+                            long lastLogIndex = lastOne.getIdex();
+                            int lastTerm = lastOne.getTerm();
+                            AppendResult appendResult = thriftClient.handleAppendEntries(currentTerm, host, lastLogIndex, lastTerm, heartBeatMessage, commitIndex);
+                            if (!appendResult.success) {
+                                nodeStatus = NodeStatus.FOLLOWER;
+                            }
                         } catch (Exception e) {
                             log.info(e.toString());
                         } finally {
@@ -168,6 +173,7 @@ public class Node {
                         }
                     }).start();
                 }
+                leaderTime = System.currentTimeMillis();
             }
         }
     }
