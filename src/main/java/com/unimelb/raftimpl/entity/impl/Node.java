@@ -100,15 +100,20 @@ public class Node {
         currentTerm = 0;
         lastApplied = 0;
         startTime = System.currentTimeMillis();
-        while (true) {
-            if (nodeStatus == NodeStatus.FOLLOWER) {
-                followerWork();
-            } else if (nodeStatus == NodeStatus.CANDIDATE) {
-                candidateWork();
-            } else if (nodeStatus == NodeStatus.LEADER) {
-                leaderWork();
+        ThreadPoolManager.getInstance().submit(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    if (nodeStatus == NodeStatus.FOLLOWER) {
+                        followerWork();
+                    } else if (nodeStatus == NodeStatus.CANDIDATE) {
+                        candidateWork();
+                    } else if (nodeStatus == NodeStatus.LEADER) {
+                        leaderWork();
+                    }
+                }
             }
-        }
+        });
     }
 
     private void followerWork() {
@@ -136,14 +141,20 @@ public class Node {
         for (Peer peer: peerSet) {
             TTransport tTransport = GetTTransport.getTTransport(peer.getHost(),peer.getPort(),3000);
             try {
-                new Thread(() -> {
-                    int score = handleVoted(tTransport, lastLogTerm, lastLogIndex);
-                    voteCount += score;
-                }).start();
+                if(tTransport!=null){
+                    new Thread(() -> {
+                        try {
+                            int score = handleVoted(tTransport, lastLogTerm, lastLogIndex);
+                            voteCount += score;
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }finally {
+                            tTransport.close();
+                        }
+                    }).start();
+                }
             } catch (Exception e) {
                 log.info(e.toString());
-            } finally {
-                tTransport.close();
             }
         }
         log.info("{}:{} vote count is {}",peerConfig.getSelfIp(),peerConfig.getPeersPort(),voteCount);
@@ -166,6 +177,8 @@ public class Node {
             voteResult = thriftClient.handleRequestVote(currentTerm,peerConfig.getSelfIp(),lastLogIndex,lastLogTerm);
         } catch (TException e) {
             e.printStackTrace();
+            log.error("fail to send the request vote rpc request",e);
+            return 0;
         }
         if (voteResult.voteGranted) {
             return 1;

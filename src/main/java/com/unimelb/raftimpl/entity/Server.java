@@ -36,7 +36,7 @@ public class Server {
             args.transportFactory(new TFramedTransport.Factory());
             args.processorFactory(new TProcessorFactory(processor));
             server = new THsHaServer(args);
-            log.info("server starts at port {}",DEFAULT_PORT);
+            log.info("thrift server starts at port {}",DEFAULT_PORT);
             new Thread(()->server.serve()).start();
         } catch (TTransportException e) {
             e.printStackTrace();
