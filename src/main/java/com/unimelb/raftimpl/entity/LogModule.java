@@ -58,16 +58,16 @@ public class LogModule {
         }
     }
 
-    public LogEntry read(long index){
+    public static LogEntry read(long index){
         return logEntryList.get((int)index);
     }
 
-    public LogEntry getPrev(LogEntry logEntry){
+    public static LogEntry getPrev(LogEntry logEntry){
         LogEntry prevLogEntry = read(logEntry.getIdex()-1);
         return prevLogEntry==null?null:prevLogEntry;
     }
 
-    public LogEntry getLastLogEntry() {
+    public static LogEntry getLastLogEntry() {
         return logEntryList.get(logEntryList.size() - 1);
     }
 

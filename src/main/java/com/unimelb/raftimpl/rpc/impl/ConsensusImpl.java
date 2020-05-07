@@ -21,21 +21,18 @@ public class ConsensusImpl implements Consensus.Iface {
 
     private static final Logger log = LoggerFactory.getLogger(ConsensusImpl.class);
 
-    @Autowired
-    private Node node;
-
     @Override
     public AppendResult handleAppendEntries(int term, String leaderId, long prevLogIndex, int prevLogTerm, List<LogEntry> entries, long leaderCommit) throws TException {
         AppendResult result = new AppendResult();
-        node.getLeader().setHost(leaderId);
+        Node.leader.setHost(leaderId);
         List<LogEntry> curLogEntries = LogModule.logEntryList;
         LogModule logModule = LogModule.getInstance();
         if (checkValidMsg(term, prevLogIndex, prevLogTerm, curLogEntries)) {
             if (entries == null) {
-                node.setStartTime(System.currentTimeMillis());
+                Node.startTime = System.currentTimeMillis();
                 result.success = true;
                 result.term = term;
-                node.setNodeStatus(NodeStatus.FOLLOWER);
+                Node.nodeStatus = NodeStatus.FOLLOWER;
             } else {
                 //todo: redirect client request to leader IP
 
@@ -48,12 +45,12 @@ public class ConsensusImpl implements Consensus.Iface {
                 for(LogEntry entry: entries){
                     LogModule.getInstance().write(entry);
                 }
-                if(leaderCommit > node.getCommitIndex())
-                    node.setCommitIndex(Math.min(leaderCommit, logModule.getLastLogEntry().getIdex()));
+                if(leaderCommit > Node.commitIndex)
+                    Node.commitIndex = Math.min(leaderCommit, logModule.getLastLogEntry().getIdex());
             }
         } else {
             result.success = false;
-            result.term = Math.max(term, node.getCurrentTerm());
+            result.term = Math.max(term, Node.currentTerm);
         }
         return result;
     }
@@ -61,16 +58,16 @@ public class ConsensusImpl implements Consensus.Iface {
     @Override
     public VoteResult handleRequestVote(int term, String candidateId, long lastLogIndex, int lastLogTerm) throws TException {
         VoteResult voteResult = new VoteResult();
-        voteResult.setTerm(node.getCurrentTerm());
+        voteResult.setTerm(Node.currentTerm);
         voteResult.setVoteGranted(false);
-        if (term > node.getCurrentTerm()) {
-            if (lastLogIndex >= node.getCommitIndex()) {
-                LogEntry temp = node.getLogModule().getLastLogEntry();
+        if (term > Node.currentTerm) {
+            if (lastLogIndex >= Node.commitIndex) {
+                LogEntry temp = LogModule.getLastLogEntry();
                 if (lastLogTerm >= temp.getTerm()) {
-                    node.setCurrentTerm(node.getCurrentTerm() + 1);
-                    voteResult.setTerm(node.getCurrentTerm());
+                    Node.currentTerm = Node.currentTerm + 1;
+                    voteResult.setTerm(Node.currentTerm);
                     voteResult.setVoteGranted(true);
-                    node.setVotedFor(candidateId);
+                    Node.votedFor = candidateId;
                 }
             }
         }
@@ -78,7 +75,7 @@ public class ConsensusImpl implements Consensus.Iface {
     }
 
     private boolean checkValidMsg(int leaderTerm, long prevLogIndex, int prevLogTerm, List<LogEntry> curLogEntries) {
-        if(leaderTerm < node.getCurrentTerm()){
+        if(leaderTerm < Node.currentTerm){
             return false;
         }
         else if(!prevLogMatch(curLogEntries, prevLogIndex, prevLogTerm)){

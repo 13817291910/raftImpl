@@ -34,33 +34,33 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Getter
 @Setter
 public class Node {
-    private final static List<LogEntry> heartBeatMessage = null;
+    public final static List<LogEntry> heartBeatMessage = null;
 
     private static final Logger log = LoggerFactory.getLogger(Node.class);
     /**
      * This is the persistent state on all servers
      */
-    private volatile int currentTerm;
+    public static volatile int currentTerm;
 
-    private volatile String votedFor;
+    public static volatile String votedFor;
 
     //todo: log module
 
-    private volatile long commitIndex;
+    public static volatile long commitIndex;
 
-    private volatile long lastApplied;
+    public static volatile long lastApplied;
 
     private Map<Peer,Long> nextIndexes;
 
     private Map<Peer,Long> matchIndexes;
 
-    private volatile NodeStatus nodeStatus;
+    public static volatile NodeStatus nodeStatus;
 
-    private Peer leader;
+    public static Peer leader;
 
-    private Peer self;
+    public static Peer self;
 
-    private long heartBeat;
+    public static long heartBeat;
 
     @Autowired
     public Server server;
@@ -68,16 +68,16 @@ public class Node {
     @Autowired
     private PeerConfig peerConfig;
 
-    private Set<Peer> peerSet;
+    private static Set<Peer> peerSet;
 
-    private StateMachine stateMachine;
+    private static StateMachine stateMachine;
 
     @Autowired
     private LogModule logModule;
 
-    private long electiontimeout;
-    private volatile long startTime;
-    private volatile int voteCount;
+    public static long electiontimeout;
+    public static volatile long startTime;
+    public static volatile int voteCount;
 
     @PostConstruct
     public void startPeer() {
