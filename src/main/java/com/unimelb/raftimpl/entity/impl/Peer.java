@@ -14,4 +14,7 @@ public class Peer {
     private String host;
     private int port;
 
+    public String toString() {
+        return host + ":" + port;
+    }
 }

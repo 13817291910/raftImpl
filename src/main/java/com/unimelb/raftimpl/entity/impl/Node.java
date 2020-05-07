@@ -162,6 +162,7 @@ public class Node {
             if (TimeCounter.checkTimeout(voteStartTime, electiontimeout + 1000)) {
                 if (voteCount >= (peerSet.size() / 2) + 1) {
                     nodeStatus = NodeStatus.LEADER;
+                    leader = self;
                     log.info("{}:{} becomes leader",peerConfig.getSelfIp(),peerConfig.getPeersPort());
                 }
                 break;
@@ -172,7 +173,7 @@ public class Node {
     private int handleVoted(TTransport tTransport, int lastLogTerm, long lastLogIndex) {
         TProtocol protocol = new TBinaryProtocol(tTransport);
         Consensus.Client thriftClient = new Consensus.Client(protocol);
-        VoteResult voteResult = null;
+        VoteResult voteResult;
         try {
             voteResult = thriftClient.handleRequestVote(currentTerm,peerConfig.getSelfIp(),lastLogIndex,lastLogTerm);
         } catch (TException e) {
@@ -209,7 +210,7 @@ public class Node {
                             tTransport = GetTTransport.getTTransport(host, port, 2000);
                             TProtocol protocol = new TBinaryProtocol(tTransport);
                             Consensus.Client thriftClient = new Consensus.Client(protocol);
-                            AppendResult appendResult = thriftClient.handleAppendEntries(currentTerm, host, lastLogIndex, lastTerm, heartBeatMessage, commitIndex);
+                            AppendResult appendResult = thriftClient.handleAppendEntries(currentTerm, leader.toString(), lastLogIndex, lastTerm, heartBeatMessage, commitIndex);
                             if (!appendResult.success) {
                                 nodeStatus = NodeStatus.FOLLOWER;
                             }
