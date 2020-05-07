@@ -2,6 +2,7 @@ package com.unimelb.raftimpl.rpc.impl;
 
 import com.unimelb.raftimpl.entity.LogModule;
 import com.unimelb.raftimpl.entity.impl.Node;
+import com.unimelb.raftimpl.entity.impl.Peer;
 import com.unimelb.raftimpl.enumerate.NodeStatus;
 import com.unimelb.raftimpl.rpc.AppendResult;
 import com.unimelb.raftimpl.rpc.Consensus;
@@ -10,10 +11,6 @@ import com.unimelb.raftimpl.rpc.VoteResult;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import sun.rmi.runtime.Log;
 
 import java.util.List;
 
@@ -25,19 +22,19 @@ public class ConsensusImpl implements Consensus.Iface {
     @Override
     public AppendResult handleAppendEntries(int term, String leaderId, long prevLogIndex, int prevLogTerm, List<LogEntry> entries, long leaderCommit) throws TException {
         AppendResult result = new AppendResult();
-//        if(Node.leader == null)
-//            Node.leader = new Peer();
-        Node.leader.setHost(leaderId);//todo set不能对未new的对象使用；
         List<LogEntry> curLogEntries = LogModule.logEntryList;
         LogModule logModule = LogModule.getInstance();
         if (checkValidMsg(term, prevLogIndex, prevLogTerm, curLogEntries)) {
+            String[] leaderInfo = leaderId.split(":");
+            String leaderHost = leaderInfo[0].trim();
+            int leaderPort = Integer.getInteger(leaderInfo[1].trim());
+            Node.leader = new Peer(leaderHost, leaderPort);
             if (entries == null) {
                 //todo: entries 设为 null，一起测了
                 Node.startTime = System.currentTimeMillis();
                 result.success = true;
                 result.term = term;
                 Node.nodeStatus = NodeStatus.FOLLOWER;
-
             } else {
                 //todo: redirect client request to leader IP
 

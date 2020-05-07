@@ -162,6 +162,7 @@ public class Node {
             if (TimeCounter.checkTimeout(voteStartTime, electiontimeout + 1000)) {
                 if (voteCount >= (peerSet.size() / 2) + 1) {
                     nodeStatus = NodeStatus.LEADER;
+                    leader = self;
                     log.info("{}:{} becomes leader",peerConfig.getSelfIp(),peerConfig.getPeersPort());
                 }
                 break;
@@ -172,7 +173,7 @@ public class Node {
     private int handleVoted(TTransport tTransport, int lastLogTerm, long lastLogIndex) {
         TProtocol protocol = new TBinaryProtocol(tTransport);
         Consensus.Client thriftClient = new Consensus.Client(protocol);
-        VoteResult voteResult = null;
+        VoteResult voteResult;
         try {
             voteResult = thriftClient.handleRequestVote(currentTerm,peerConfig.getSelfIp(),lastLogIndex,lastLogTerm);
         } catch (TException e) {
@@ -191,6 +192,15 @@ public class Node {
         while (true) {
             if (TimeCounter.checkTimeout(leaderTime, heartBeat)) {
                 LogEntry lastOne = logModule.getLastLogEntry();
+                long lastLogIndex;
+                int lastTerm;
+                if (lastOne == null) {
+                    lastLogIndex = 0;
+                    lastTerm = 0;
+                } else {
+                    lastLogIndex = lastOne.getIdex();
+                    lastTerm = lastOne.getTerm();
+                }
                 for (Peer peer: peerSet) {
                     new Thread(() -> {
                         TTransport tTransport = null;
@@ -200,9 +210,7 @@ public class Node {
                             tTransport = GetTTransport.getTTransport(host, port, 2000);
                             TProtocol protocol = new TBinaryProtocol(tTransport);
                             Consensus.Client thriftClient = new Consensus.Client(protocol);
-                            long lastLogIndex = lastOne.getIdex();
-                            int lastTerm = lastOne.getTerm();
-                            AppendResult appendResult = thriftClient.handleAppendEntries(currentTerm, host, lastLogIndex, lastTerm, heartBeatMessage, commitIndex);
+                            AppendResult appendResult = thriftClient.handleAppendEntries(currentTerm, leader.toString(), lastLogIndex, lastTerm, heartBeatMessage, commitIndex);
                             if (!appendResult.success) {
                                 nodeStatus = NodeStatus.FOLLOWER;
                             }
