@@ -191,6 +191,15 @@ public class Node {
         while (true) {
             if (TimeCounter.checkTimeout(leaderTime, heartBeat)) {
                 LogEntry lastOne = logModule.getLastLogEntry();
+                long lastLogIndex;
+                int lastTerm;
+                if (lastOne == null) {
+                    lastLogIndex = 0;
+                    lastTerm = 0;
+                } else {
+                    lastLogIndex = lastOne.getIdex();
+                    lastTerm = lastOne.getTerm();
+                }
                 for (Peer peer: peerSet) {
                     new Thread(() -> {
                         TTransport tTransport = null;
@@ -200,8 +209,6 @@ public class Node {
                             tTransport = GetTTransport.getTTransport(host, port, 2000);
                             TProtocol protocol = new TBinaryProtocol(tTransport);
                             Consensus.Client thriftClient = new Consensus.Client(protocol);
-                            long lastLogIndex = lastOne.getIdex();
-                            int lastTerm = lastOne.getTerm();
                             AppendResult appendResult = thriftClient.handleAppendEntries(currentTerm, host, lastLogIndex, lastTerm, heartBeatMessage, commitIndex);
                             if (!appendResult.success) {
                                 nodeStatus = NodeStatus.FOLLOWER;
