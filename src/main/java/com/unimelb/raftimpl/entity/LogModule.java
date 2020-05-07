@@ -68,7 +68,8 @@ public class LogModule {
     }
 
     public static LogEntry getLastLogEntry() {
-        return logEntryList.get(logEntryList.size() - 1);
+
+        return logEntryList.size()==0?null:logEntryList.get(logEntryList.size() - 1);
     }
 
     public boolean delete(long index){
