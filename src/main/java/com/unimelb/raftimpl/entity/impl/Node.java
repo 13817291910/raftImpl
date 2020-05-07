@@ -331,6 +331,15 @@ public class Node {
                 //TODO: 初始化的时候prev是空，这里的逻辑还没做，以及接收rpc的结果
                 long prevLogIndex = prevLogEntry.getIdex();
                 int prevLogTerm = prevLogEntry.getTerm();
+                if(prevLogEntry==null){
+                    prevLogIndex = 0;
+                    prevLogTerm = 0;
+                }else{
+                    prevLogIndex = prevLogEntry.getIdex();
+                    prevLogTerm = prevLogEntry.getTerm();
+                }
+                log.info("handleAppendEntries parameter: term:{},leaderId:{},prevLogIndex:{},prevLogTerm:{},entries:{},leaderCommit:{}"
+                        ,term,leaderId,prevLogTerm,prevLogIndex,entries,leaderCommit);
                 AppendResult appendResult = client.handleAppendEntries(term,leaderId,
                                                             prevLogIndex,prevLogTerm,
                                                             entries,leaderCommit);
