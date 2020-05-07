@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import sun.rmi.runtime.Log;
 
 import java.util.List;
@@ -24,29 +25,46 @@ public class ConsensusImpl implements Consensus.Iface {
     @Override
     public AppendResult handleAppendEntries(int term, String leaderId, long prevLogIndex, int prevLogTerm, List<LogEntry> entries, long leaderCommit) throws TException {
         AppendResult result = new AppendResult();
-        Node.leader.setHost(leaderId);
+//        if(Node.leader == null)
+//            Node.leader = new Peer();
+        Node.leader.setHost(leaderId);//todo set不能对未new的对象使用；
         List<LogEntry> curLogEntries = LogModule.logEntryList;
         LogModule logModule = LogModule.getInstance();
         if (checkValidMsg(term, prevLogIndex, prevLogTerm, curLogEntries)) {
             if (entries == null) {
+                //todo: entries 设为 null，一起测了
                 Node.startTime = System.currentTimeMillis();
                 result.success = true;
                 result.term = term;
                 Node.nodeStatus = NodeStatus.FOLLOWER;
+
             } else {
                 //todo: redirect client request to leader IP
 
-                //todo?: 如果已经存在的日志条目和新的产生冲突（索引值相同但是任期号不同）,删除这一条和之后所有的 ;
-                // 附加日志中尚未存在的任何新条目;
                 LogEntry firstAppendEntry = entries.get(0);
                 long delIndex = firstAppendEntry.getIdex();
-                LogModule.getInstance().delete(delIndex);
+                logModule.delete(delIndex);
 
+                //todo: addTransaction一下
                 for(LogEntry entry: entries){
-                    LogModule.getInstance().write(entry);
+                    logModule.write(entry);
                 }
-                if(leaderCommit > Node.commitIndex)
+                if(leaderCommit > Node.commitIndex){
                     Node.commitIndex = Math.min(leaderCommit, logModule.getLastLogEntry().getIdex());
+                }
+                if(Node.commitIndex > Node.lastApplied){
+                    curLogEntries = LogModule.logEntryList;
+                    try{
+                        for(int index = (int)Node.lastApplied + 1; index <= Node.commitIndex; index++){
+                            Node.stateMachine.apply(curLogEntries.get(index));
+                            Node.lastApplied++;
+                        }
+                        Node.lastApplied = Node.commitIndex;
+                    } catch (Exception e) {
+                        log.info(e.toString());
+                    }
+                }
+                //todo: 结束transaction
             }
         } else {
             result.success = false;
