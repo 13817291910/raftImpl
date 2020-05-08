@@ -2,6 +2,7 @@ package com.unimelb.raftimpl.rpc.impl;
 
 import com.unimelb.raftimpl.entity.LogModule;
 import com.unimelb.raftimpl.entity.impl.Node;
+import com.unimelb.raftimpl.entity.impl.Peer;
 import com.unimelb.raftimpl.enumerate.NodeStatus;
 import com.unimelb.raftimpl.rpc.AppendResult;
 import com.unimelb.raftimpl.rpc.Consensus;
@@ -21,10 +22,13 @@ public class ConsensusImpl implements Consensus.Iface {
     @Override
     public AppendResult handleAppendEntries(int term, String leaderId, long prevLogIndex, int prevLogTerm, List<LogEntry> entries, long leaderCommit) throws TException {
         AppendResult result = new AppendResult();
-        Node.leader.setHost(leaderId);
         List<LogEntry> curLogEntries = LogModule.logEntryList;
         LogModule logModule = LogModule.getInstance();
         if (checkValidMsg(term, prevLogIndex, prevLogTerm, curLogEntries)) {
+            String[] leaderInfo = leaderId.split(":");
+            String leaderHost = leaderInfo[0].trim();
+            int leaderPort = Integer.getInteger(leaderInfo[1].trim());
+            Node.leader = new Peer(leaderHost, leaderPort);
             if (entries == null) {
                 Node.startTime = System.currentTimeMillis();
                 result.success = true;
