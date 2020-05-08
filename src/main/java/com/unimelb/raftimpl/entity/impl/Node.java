@@ -270,6 +270,7 @@ public class Node {
             countDownLatch.await(5000,TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             e.printStackTrace();
+            log.error("the replicate step costs more than 5000 ms");
         }
 
         /*
