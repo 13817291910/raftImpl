@@ -23,6 +23,7 @@ import org.apache.thrift.transport.TTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -60,7 +61,8 @@ public class Node {
 
     public static Peer self;
 
-    public static long heartBeat;
+    @Value("${self.heartBeat}")
+    public static int heartBeat;
 
     @Autowired
     public Server server;
@@ -83,7 +85,7 @@ public class Node {
     public void startPeer() {
         log.info("startPeer is starting");
         self = new Peer(peerConfig.getSelfIp(),peerConfig.getSelfPort());
-        electiontimeout = (long) NumberGenerator.generateNumber(200, 500);
+        electiontimeout = (long) NumberGenerator.generateNumber(4000, 7000);
         nodeStatus = NodeStatus.FOLLOWER;
         String[] peersIp = peerConfig.getPeersIp();
         int[] peersPort = peerConfig.getPeersPort();
@@ -100,23 +102,21 @@ public class Node {
         currentTerm = 0;
         lastApplied = 0;
         startTime = System.currentTimeMillis();
-        ThreadPoolManager.getInstance().submit(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    if (nodeStatus == NodeStatus.FOLLOWER) {
-                        followerWork();
-                    } else if (nodeStatus == NodeStatus.CANDIDATE) {
-                        candidateWork();
-                    } else if (nodeStatus == NodeStatus.LEADER) {
-                        leaderWork();
-                    }
+        new Thread(()->{
+            while (true) {
+                if (nodeStatus == NodeStatus.FOLLOWER) {
+                    followerWork();
+                } else if (nodeStatus == NodeStatus.CANDIDATE) {
+                    candidateWork();
+                } else if (nodeStatus == NodeStatus.LEADER) {
+                    leaderWork();
                 }
             }
-        });
+        }).start();
     }
 
     private void followerWork() {
+      //  log.info("{}:{} is follower",peerConfig.getSelfIp(),peerConfig.getPeersPort());
         if (TimeCounter.checkTimeout(startTime, heartBeat) && TimeCounter.checkTimeout(startTime, electiontimeout)) {
             nodeStatus = NodeStatus.CANDIDATE;
         }
@@ -202,7 +202,7 @@ public class Node {
                     lastTerm = lastOne.getTerm();
                 }
                 for (Peer peer: peerSet) {
-                    new Thread(() -> {
+                    ThreadPoolManager.getInstance().execute(()->{
                         TTransport tTransport = null;
                         try {
                             String host = peer.getHost();
@@ -219,7 +219,7 @@ public class Node {
                         } finally {
                             tTransport.close();
                         }
-                    }).start();
+                    });
                 }
                 leaderTime = System.currentTimeMillis();
             }
@@ -234,7 +234,7 @@ public class Node {
         *@Author: di kan
         *@Date: 2020/4/30
      */
-    public synchronized CommonMsg handleRequest(LogEntry logEntry, Consensus.Client client){
+    public synchronized CommonMsg handleRequest(LogEntry logEntry){
         logEntry.term = currentTerm;
         logModule.write(logEntry);
         log.info("write logModule success, logEntry info : {}, log index : {}", logEntry, logEntry.getIdex());
@@ -244,6 +244,9 @@ public class Node {
         int count = 0;
         commitIndex = 0;
         for(Peer peer:peerSet){
+            TTransport tTransport = GetTTransport.getTTransport(peer.getHost(),peer.getPort(),3000);
+            TProtocol protocol = new TBinaryProtocol(tTransport);
+            Consensus.Client client = new Consensus.Client(protocol);
             futureList.add(replicateToSlave(peer,logEntry,client));
         }
         CountDownLatch countDownLatch = new CountDownLatch(futureList.size());
@@ -337,8 +340,8 @@ public class Node {
                 }
                 LogEntry prevLogEntry = logModule.getPrev(entries.getFirst());
                 //TODO: 初始化的时候prev是空，这里的逻辑还没做，以及接收rpc的结果
-                long prevLogIndex = prevLogEntry.getIdex();
-                int prevLogTerm = prevLogEntry.getTerm();
+                long prevLogIndex;
+                int prevLogTerm;
                 if(prevLogEntry==null){
                     prevLogIndex = 0;
                     prevLogTerm = 0;
