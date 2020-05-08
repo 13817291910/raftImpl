@@ -72,7 +72,7 @@ public class Node {
 
     private static Set<Peer> peerSet;
 
-    private static StateMachine stateMachine;
+    public static StateMachine stateMachine;
 
     @Autowired
     private LogModule logModule;

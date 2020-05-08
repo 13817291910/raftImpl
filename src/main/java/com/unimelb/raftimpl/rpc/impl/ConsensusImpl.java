@@ -11,6 +11,7 @@ import com.unimelb.raftimpl.rpc.VoteResult;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -18,9 +19,11 @@ import java.util.List;
 public class ConsensusImpl implements Consensus.Iface {
 
     private static final Logger log = LoggerFactory.getLogger(ConsensusImpl.class);
-
     @Override
-    public AppendResult handleAppendEntries(int term, String leaderId, long prevLogIndex, int prevLogTerm, List<LogEntry> entries, long leaderCommit) throws TException {
+    public AppendResult handleAppendEntries(int term, String leaderId,
+                                            long prevLogIndex, int prevLogTerm,
+                                            List<LogEntry> entries, long leaderCommit)
+                                            throws TException {
         AppendResult result = new AppendResult();
         List<LogEntry> curLogEntries = LogModule.logEntryList;
         LogModule logModule = LogModule.getInstance();
@@ -30,6 +33,7 @@ public class ConsensusImpl implements Consensus.Iface {
             int leaderPort = Integer.getInteger(leaderInfo[1].trim());
             Node.leader = new Peer(leaderHost, leaderPort);
             if (entries == null) {
+                //todo: entries 设为 null，一起测了
                 Node.startTime = System.currentTimeMillis();
                 result.success = true;
                 result.term = term;
@@ -37,17 +41,23 @@ public class ConsensusImpl implements Consensus.Iface {
             } else {
                 //todo: redirect client request to leader IP
 
-                //todo?: 如果已经存在的日志条目和新的产生冲突（索引值相同但是任期号不同）,删除这一条和之后所有的 ;
-                // 附加日志中尚未存在的任何新条目;
                 LogEntry firstAppendEntry = entries.get(0);
                 long delIndex = firstAppendEntry.getIdex();
-                LogModule.getInstance().delete(delIndex);
+                logModule.delete(delIndex);
 
                 for(LogEntry entry: entries){
-                    LogModule.getInstance().write(entry);
+                    logModule.write(entry);
                 }
-                if(leaderCommit > Node.commitIndex)
+                log.info("write log to logModule successfully");
+
+                if(leaderCommit > Node.commitIndex){
                     Node.commitIndex = Math.min(leaderCommit, logModule.getLastLogEntry().getIdex());
+                }
+                if(Node.commitIndex > Node.lastApplied){
+                    curLogEntries = LogModule.logEntryList;
+                    writeToStateMachine(curLogEntries);
+                    Node.lastApplied = Node.commitIndex;
+                }
             }
         } else {
             result.success = false;
@@ -98,5 +108,13 @@ public class ConsensusImpl implements Consensus.Iface {
                 return curLogEntry.getTerm() == prevLogTerm;
         }
         return false;
+    }
+
+    @Transactional
+    public void writeToStateMachine(List<LogEntry> curLogEntries) {
+        for(int index = (int)Node.lastApplied + 1; index <= Node.commitIndex; index++){
+            Node.stateMachine.apply(curLogEntries.get(index));
+            log.info("add log {} to state machine successfully", curLogEntries.get(index).toString());
+        }
     }
 }
