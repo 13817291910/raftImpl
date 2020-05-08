@@ -191,6 +191,10 @@ public class Node {
         }
         if (voteResult.voteGranted) {
             return 1;
+        } else {
+            if (voteResult.getTerm() > currentTerm) {
+                currentTerm = voteResult.getTerm();
+            }
         }
         return 0;
     }
@@ -221,6 +225,8 @@ public class Node {
                             Consensus.Client thriftClient = new Consensus.Client(protocol);
                             AppendResult appendResult = thriftClient.handleAppendEntries(currentTerm, leader.toString(), lastLogIndex, lastTerm, heartBeatMessage, commitIndex);
                             if (!appendResult.success) {
+                                if (currentTerm < appendResult.getTerm())
+                                    currentTerm = appendResult.getTerm();
                                 nodeStatus = NodeStatus.FOLLOWER;
                             }
                         } catch (Exception e) {

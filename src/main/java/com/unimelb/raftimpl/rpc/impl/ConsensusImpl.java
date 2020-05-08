@@ -72,7 +72,7 @@ public class ConsensusImpl implements Consensus.Iface {
                 }
                 if (lastLogTerm >= tempTerm) {
                     //Node.currentTerm = Node.currentTerm + 1;
-                    Node.currentTerm = term;
+                    //Node.currentTerm = term;
                     //voteResult.setTerm(Node.currentTerm);
                     voteResult.setVoteGranted(true);
                     Node.votedFor = candidateId;
