@@ -11,6 +11,7 @@ import com.unimelb.raftimpl.rpc.VoteResult;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -18,9 +19,11 @@ import java.util.List;
 public class ConsensusImpl implements Consensus.Iface {
 
     private static final Logger log = LoggerFactory.getLogger(ConsensusImpl.class);
-
     @Override
-    public AppendResult handleAppendEntries(int term, String leaderId, long prevLogIndex, int prevLogTerm, List<LogEntry> entries, long leaderCommit) throws TException {
+    public AppendResult handleAppendEntries(int term, String leaderId,
+                                            long prevLogIndex, int prevLogTerm,
+                                            List<LogEntry> entries, long leaderCommit)
+                                            throws TException {
         AppendResult result = new AppendResult();
         List<LogEntry> curLogEntries = LogModule.logEntryList;
         LogModule logModule = LogModule.getInstance();
@@ -42,26 +45,19 @@ public class ConsensusImpl implements Consensus.Iface {
                 long delIndex = firstAppendEntry.getIdex();
                 logModule.delete(delIndex);
 
-                //todo: addTransaction一下
                 for(LogEntry entry: entries){
                     logModule.write(entry);
                 }
+                log.info("write log to logModule successfully");
+
                 if(leaderCommit > Node.commitIndex){
                     Node.commitIndex = Math.min(leaderCommit, logModule.getLastLogEntry().getIdex());
                 }
                 if(Node.commitIndex > Node.lastApplied){
                     curLogEntries = LogModule.logEntryList;
-                    try{
-                        for(int index = (int)Node.lastApplied + 1; index <= Node.commitIndex; index++){
-                            Node.stateMachine.apply(curLogEntries.get(index));
-                            Node.lastApplied++;
-                        }
-                        Node.lastApplied = Node.commitIndex;
-                    } catch (Exception e) {
-                        log.info(e.toString());
-                    }
+                    writeToStateMachine(curLogEntries);
+                    Node.lastApplied = Node.commitIndex;
                 }
-                //todo: 结束transaction
             }
         } else {
             result.success = false;
@@ -111,5 +107,13 @@ public class ConsensusImpl implements Consensus.Iface {
                 return curLogEntry.getTerm() == prevLogTerm;
         }
         return false;
+    }
+
+    @Transactional
+    public void writeToStateMachine(List<LogEntry> curLogEntries) {
+        for(int index = (int)Node.lastApplied + 1; index <= Node.commitIndex; index++){
+            Node.stateMachine.apply(curLogEntries.get(index));
+            log.info("add log {} to state machine successfully", curLogEntries.get(index).toString());
+        }
     }
 }

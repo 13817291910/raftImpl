@@ -12,7 +12,7 @@ import java.util.Set;
 @Configuration
 public class PeerConfig {
 
-    @Value("{self.ip}")
+    @Value("${self.ip}")
     private String selfIp;
 
     @Value("${self.port}")
