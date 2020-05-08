@@ -157,13 +157,13 @@ public class Node {
                 log.info(e.toString());
             }
         }
-        log.info("{}:{} vote count is {}",peerConfig.getSelfIp(),peerConfig.getPeersPort(),voteCount);
+        log.info("{}:{} vote count is {}",peerConfig.getSelfIp(),peerConfig.getSelfPort(),voteCount);
         while (true) {
             if (TimeCounter.checkTimeout(voteStartTime, electiontimeout + 1000)) {
                 if (voteCount >= (peerSet.size() / 2) + 1) {
                     nodeStatus = NodeStatus.LEADER;
                     leader = self;
-                    log.info("{}:{} becomes leader",peerConfig.getSelfIp(),peerConfig.getPeersPort());
+                    log.info("{}:{} becomes leader",peerConfig.getSelfIp(),peerConfig.getSelfPort());
                 }
                 break;
             }
