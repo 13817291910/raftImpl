@@ -85,7 +85,7 @@ public class Node {
     public void startPeer() {
         log.info("startPeer is starting");
         self = new Peer(peerConfig.getSelfIp(),peerConfig.getSelfPort());
-        electiontimeout = (long) NumberGenerator.generateNumber(4000, 7000);
+        electiontimeout = (long) NumberGenerator.generateNumber(6000, 9000);
         nodeStatus = NodeStatus.FOLLOWER;
         String[] peersIp = peerConfig.getPeersIp();
         int[] peersPort = peerConfig.getPeersPort();
@@ -151,7 +151,7 @@ public class Node {
                             voteCount += score;
                         } catch (Exception e) {
                             e.printStackTrace();
-                        }finally {
+                        } finally {
                             tTransport.close();
                         }
                     }).start();
@@ -164,10 +164,13 @@ public class Node {
         while (true) {
             if (TimeCounter.checkTimeout(voteStartTime, electiontimeout + 1000)) {
                 int totalPeer = peerSet.size() + 1;
-                if (voteCount >= Math.ceil(totalPeer / 2.0)) {
+                if (voteCount > Math.ceil(totalPeer / 2.0)) {
                     nodeStatus = NodeStatus.LEADER;
                     leader = self;
                     log.info("{}:{} becomes leader",peerConfig.getSelfIp(),peerConfig.getSelfPort());
+                } else {
+                    nodeStatus = NodeStatus.FOLLOWER;
+                    startTime = System.currentTimeMillis();
                 }
                 break;
             }
