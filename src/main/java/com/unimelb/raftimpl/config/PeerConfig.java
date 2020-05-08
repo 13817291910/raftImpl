@@ -24,4 +24,7 @@ public class PeerConfig {
     @Value("${peers.port}")
     private int[] peersPort;
 
+    @Value("${self.heartBeat}")
+    private int heartBeat;
+
 }
