@@ -182,6 +182,7 @@ public class Node {
         Consensus.Client thriftClient = new Consensus.Client(protocol);
         VoteResult voteResult;
         try {
+            log.info("current term is {}", currentTerm);
             voteResult = thriftClient.handleRequestVote(currentTerm,peerConfig.getSelfIp(),lastLogIndex,lastLogTerm);
         } catch (TException e) {
             e.printStackTrace();
