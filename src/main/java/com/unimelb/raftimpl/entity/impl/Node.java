@@ -61,7 +61,7 @@ public class Node {
 
     public static Peer self;
 
-    @Value("${self.heartBeat}")
+    //@Value("${self.heartBeat}")
     public static int heartBeat;
 
     @Autowired
@@ -85,10 +85,11 @@ public class Node {
     public void startPeer() {
         log.info("startPeer is starting");
         self = new Peer(peerConfig.getSelfIp(),peerConfig.getSelfPort());
-        electiontimeout = (long) NumberGenerator.generateNumber(4000, 7000);
+        electiontimeout = (long) NumberGenerator.generateNumber(6000, 9000);
         nodeStatus = NodeStatus.FOLLOWER;
         String[] peersIp = peerConfig.getPeersIp();
         int[] peersPort = peerConfig.getPeersPort();
+        heartBeat = peerConfig.getHeartBeat();
         nextIndexes = new HashMap<>();
         matchIndexes = new HashMap<>();
         peerSet = new HashSet<>();
@@ -103,6 +104,7 @@ public class Node {
         lastApplied = 0;
         startTime = System.currentTimeMillis();
         new Thread(()->{
+            log.info("get into loop");
             while (true) {
                 if (nodeStatus == NodeStatus.FOLLOWER) {
                     followerWork();
@@ -127,6 +129,7 @@ public class Node {
         long voteStartTime = System.currentTimeMillis();
         currentTerm = currentTerm + 1;
         votedFor = peerConfig.getSelfIp();
+        voteCount = voteCount + 1;
         List<LogEntry> logEntryList = LogModule.logEntryList;
         int lastLogTerm;
         long lastLogIndex;
@@ -148,7 +151,7 @@ public class Node {
                             voteCount += score;
                         } catch (Exception e) {
                             e.printStackTrace();
-                        }finally {
+                        } finally {
                             tTransport.close();
                         }
                     }).start();
@@ -157,13 +160,17 @@ public class Node {
                 log.info(e.toString());
             }
         }
-        log.info("{}:{} vote count is {}",peerConfig.getSelfIp(),peerConfig.getSelfPort(),voteCount);
+        log.info("{}:{} vote count is {} current term is {}",peerConfig.getSelfIp(),peerConfig.getSelfPort(),voteCount, currentTerm);
         while (true) {
             if (TimeCounter.checkTimeout(voteStartTime, electiontimeout + 1000)) {
-                if (voteCount >= (peerSet.size() / 2) + 1) {
+                int totalPeer = peerSet.size() + 1;
+                if (voteCount > Math.ceil(totalPeer / 2.0)) {
                     nodeStatus = NodeStatus.LEADER;
                     leader = self;
                     log.info("{}:{} becomes leader",peerConfig.getSelfIp(),peerConfig.getSelfPort());
+                } else {
+                    nodeStatus = NodeStatus.FOLLOWER;
+                    startTime = System.currentTimeMillis();
                 }
                 break;
             }
@@ -175,6 +182,7 @@ public class Node {
         Consensus.Client thriftClient = new Consensus.Client(protocol);
         VoteResult voteResult;
         try {
+            log.info("current term is {}", currentTerm);
             voteResult = thriftClient.handleRequestVote(currentTerm,peerConfig.getSelfIp(),lastLogIndex,lastLogTerm);
         } catch (TException e) {
             e.printStackTrace();
@@ -183,6 +191,10 @@ public class Node {
         }
         if (voteResult.voteGranted) {
             return 1;
+        } else {
+            if (voteResult.getTerm() > currentTerm) {
+                currentTerm = voteResult.getTerm();
+            }
         }
         return 0;
     }
@@ -191,6 +203,7 @@ public class Node {
         long leaderTime = System.currentTimeMillis();
         while (true) {
             if (TimeCounter.checkTimeout(leaderTime, heartBeat)) {
+                log.info("leadertime is " + leaderTime);
                 LogEntry lastOne = logModule.getLastLogEntry();
                 long lastLogIndex;
                 int lastTerm;
@@ -212,6 +225,8 @@ public class Node {
                             Consensus.Client thriftClient = new Consensus.Client(protocol);
                             AppendResult appendResult = thriftClient.handleAppendEntries(currentTerm, leader.toString(), lastLogIndex, lastTerm, heartBeatMessage, commitIndex);
                             if (!appendResult.success) {
+                                if (currentTerm < appendResult.getTerm())
+                                    currentTerm = appendResult.getTerm();
                                 nodeStatus = NodeStatus.FOLLOWER;
                             }
                         } catch (Exception e) {
@@ -222,6 +237,7 @@ public class Node {
                     });
                 }
                 leaderTime = System.currentTimeMillis();
+                //break;
             }
         }
     }
