@@ -61,7 +61,7 @@ public class ConsensusImpl implements Consensus.Iface {
         VoteResult voteResult = new VoteResult();
         voteResult.setTerm(Node.currentTerm);
         voteResult.setVoteGranted(false);
-        if (term > Node.currentTerm) {
+        if (term >= Node.currentTerm) {
             if (lastLogIndex >= Node.commitIndex) {
                 LogEntry temp = LogModule.getLastLogEntry();
                 int tempTerm;

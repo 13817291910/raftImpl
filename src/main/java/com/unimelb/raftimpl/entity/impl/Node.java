@@ -102,9 +102,10 @@ public class Node {
         log.info("the connected peers are {}",peerSet.toString());
         currentTerm = 0;
         lastApplied = 0;
-        startTime = System.currentTimeMillis();
         new Thread(()->{
             log.info("get into loop");
+            log.info("election time out is {}", electiontimeout);
+            startTime = System.currentTimeMillis();
             while (true) {
                 if (nodeStatus == NodeStatus.FOLLOWER) {
                     followerWork();
@@ -120,13 +121,15 @@ public class Node {
     private void followerWork() {
       //  log.info("{}:{} is follower",peerConfig.getSelfIp(),peerConfig.getPeersPort());
         if (TimeCounter.checkTimeout(startTime, heartBeat) && TimeCounter.checkTimeout(startTime, electiontimeout)) {
+
+            log.info("become candidate");
             nodeStatus = NodeStatus.CANDIDATE;
         }
     }
 
     private void candidateWork() {
         voteCount = 0;
-        long voteStartTime = System.currentTimeMillis();
+
         currentTerm = currentTerm + 1;
         votedFor = peerConfig.getSelfIp();
         voteCount = voteCount + 1;
@@ -141,6 +144,7 @@ public class Node {
             lastLogTerm = logEntry.getTerm();
             lastLogIndex = logEntry.getIdex();
         }
+        CountDownLatch latch = new CountDownLatch(peerSet.size());
         for (Peer peer: peerSet) {
             TTransport tTransport = GetTTransport.getTTransport(peer.getHost(),peer.getPort(),3000);
             try {
@@ -148,10 +152,17 @@ public class Node {
                     new Thread(() -> {
                         try {
                             int score = handleVoted(tTransport, lastLogTerm, lastLogIndex);
-                            voteCount += score;
+
+                            log.info("score is {}", score);
+                            voteCount = voteCount + score;
+
+
+                            log.info("voted count is {}", voteCount);
+                            //latch.countDown();
                         } catch (Exception e) {
                             e.printStackTrace();
                         } finally {
+                            latch.countDown();
                             tTransport.close();
                         }
                     }).start();
@@ -160,21 +171,34 @@ public class Node {
                 log.info(e.toString());
             }
         }
-        log.info("{}:{} vote count is {} current term is {}",peerConfig.getSelfIp(),peerConfig.getSelfPort(),voteCount, currentTerm);
-        while (true) {
-            if (TimeCounter.checkTimeout(voteStartTime, electiontimeout + 1000)) {
-                int totalPeer = peerSet.size() + 1;
-                if (voteCount > Math.ceil(totalPeer / 2.0)) {
-                    nodeStatus = NodeStatus.LEADER;
-                    leader = self;
-                    log.info("{}:{} becomes leader",peerConfig.getSelfIp(),peerConfig.getSelfPort());
-                } else {
-                    nodeStatus = NodeStatus.FOLLOWER;
-                    startTime = System.currentTimeMillis();
+        //try {
+        //    Thread.sleep(3000);
+        //} catch (InterruptedException e) {
+        //    e.printStackTrace();
+        //}
+        try {
+            latch.await();
+            long voteStartTime = System.currentTimeMillis();
+
+            while (true) {
+                if (TimeCounter.checkTimeout(voteStartTime, electiontimeout + 1000)) {
+                    log.info("{}:{} vote count is {} current term is {}",peerConfig.getSelfIp(),peerConfig.getSelfPort(),voteCount, currentTerm);
+                    int totalPeer = peerSet.size() + 1;
+                    if (voteCount > Math.ceil(totalPeer / 2.0)) {
+                        nodeStatus = NodeStatus.LEADER;
+                        leader = self;
+                        log.info("{}:{} becomes leader",peerConfig.getSelfIp(),peerConfig.getSelfPort());
+                    } else {
+                        nodeStatus = NodeStatus.FOLLOWER;
+                        startTime = System.currentTimeMillis();
+                    }
+                    break;
                 }
-                break;
             }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
+
     }
 
     private int handleVoted(TTransport tTransport, int lastLogTerm, long lastLogIndex) {
