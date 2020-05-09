@@ -180,8 +180,8 @@ public class Node {
             long voteStartTime = System.currentTimeMillis();
 
             while (true) {
-                if (TimeCounter.checkTimeout(voteStartTime, electiontimeout + 1000)) {
-                    log.info("{}:{} vote count is {} current term is {}",peerConfig.getSelfIp(),peerConfig.getSelfPort(),voteCount, currentTerm);
+                if (TimeCounter.checkTimeout(voteStartTime, electiontimeout)) {
+                    log.info("status is {} {}:{} vote count is {} current term is {}",nodeStatus, peerConfig.getSelfIp(),peerConfig.getSelfPort(),voteCount, currentTerm);
                     int totalPeer = peerSet.size() + 1;
                     if (voteCount > Math.ceil(totalPeer / 2.0)) {
                         if (nodeStatus == NodeStatus.CANDIDATE)
@@ -229,7 +229,6 @@ public class Node {
         long leaderTime = System.currentTimeMillis();
         while (true) {
             if (TimeCounter.checkTimeout(leaderTime, heartBeat)) {
-                log.info("leadertime is " + leaderTime);
                 LogEntry lastOne = logModule.getLastLogEntry();
                 long lastLogIndex;
                 int lastTerm;
