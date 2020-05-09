@@ -129,7 +129,6 @@ public class Node {
 
     private void candidateWork() {
         voteCount = 0;
-
         currentTerm = currentTerm + 1;
         votedFor = peerConfig.getSelfIp();
         voteCount = voteCount + 1;
@@ -185,7 +184,10 @@ public class Node {
                     log.info("{}:{} vote count is {} current term is {}",peerConfig.getSelfIp(),peerConfig.getSelfPort(),voteCount, currentTerm);
                     int totalPeer = peerSet.size() + 1;
                     if (voteCount > Math.ceil(totalPeer / 2.0)) {
-                        nodeStatus = NodeStatus.LEADER;
+                        if (nodeStatus == NodeStatus.CANDIDATE)
+                            nodeStatus = NodeStatus.LEADER;
+                        else
+                            break;
                         leader = self;
                         log.info("{}:{} becomes leader",peerConfig.getSelfIp(),peerConfig.getSelfPort());
                     } else {
