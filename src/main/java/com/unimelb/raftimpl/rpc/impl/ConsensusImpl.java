@@ -24,16 +24,19 @@ public class ConsensusImpl implements Consensus.Iface {
                                             long prevLogIndex, int prevLogTerm,
                                             List<LogEntry> entries, long leaderCommit)
                                             throws TException {
+        //todo: thrift connot pass the list parameter
         AppendResult result = new AppendResult();
         List<LogEntry> curLogEntries = LogModule.logEntryList;
         LogModule logModule = LogModule.getInstance();
         if (checkValidMsg(term, prevLogIndex, prevLogTerm, curLogEntries)) {
             String[] leaderInfo = leaderId.split(":");
             String leaderHost = leaderInfo[0].trim();
-            int leaderPort = Integer.getInteger(leaderInfo[1].trim());
+            //int leaderPort = Integer.getInteger(leaderInfo[1])
+            int leaderPort = Integer.valueOf(leaderInfo[1]);
             Node.leader = new Peer(leaderHost, leaderPort);
             if (entries == null) {
                 //todo: entries 设为 null，一起测了
+                log.info("get heartbeat successfully");
                 Node.startTime = System.currentTimeMillis();
                 result.success = true;
                 result.term = term;
@@ -96,9 +99,9 @@ public class ConsensusImpl implements Consensus.Iface {
         if(leaderTerm < Node.currentTerm){
             return false;
         }
-        else if(!prevLogMatch(curLogEntries, prevLogIndex, prevLogTerm)){
-            return false;
-        }
+        //else if(!prevLogMatch(curLogEntries, prevLogIndex, prevLogTerm)){
+        //    return false;
+        //}
         return true;
     }
 

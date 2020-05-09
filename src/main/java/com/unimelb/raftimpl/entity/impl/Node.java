@@ -102,9 +102,10 @@ public class Node {
         log.info("the connected peers are {}",peerSet.toString());
         currentTerm = 0;
         lastApplied = 0;
-        startTime = System.currentTimeMillis();
         new Thread(()->{
             log.info("get into loop");
+            log.info("election time out is {}", electiontimeout);
+            startTime = System.currentTimeMillis();
             while (true) {
                 if (nodeStatus == NodeStatus.FOLLOWER) {
                     followerWork();
@@ -120,13 +121,14 @@ public class Node {
     private void followerWork() {
       //  log.info("{}:{} is follower",peerConfig.getSelfIp(),peerConfig.getPeersPort());
         if (TimeCounter.checkTimeout(startTime, heartBeat) && TimeCounter.checkTimeout(startTime, electiontimeout)) {
+
+            log.info("become candidate");
             nodeStatus = NodeStatus.CANDIDATE;
         }
     }
 
     private void candidateWork() {
         voteCount = 0;
-        long voteStartTime = System.currentTimeMillis();
         currentTerm = currentTerm + 1;
         votedFor = peerConfig.getSelfIp();
         voteCount = voteCount + 1;
@@ -141,6 +143,7 @@ public class Node {
             lastLogTerm = logEntry.getTerm();
             lastLogIndex = logEntry.getIdex();
         }
+        CountDownLatch latch = new CountDownLatch(peerSet.size());
         for (Peer peer: peerSet) {
             TTransport tTransport = GetTTransport.getTTransport(peer.getHost(),peer.getPort(),3000);
             try {
@@ -148,10 +151,17 @@ public class Node {
                     new Thread(() -> {
                         try {
                             int score = handleVoted(tTransport, lastLogTerm, lastLogIndex);
-                            voteCount += score;
+
+                            log.info("score is {}", score);
+                            voteCount = voteCount + score;
+
+
+                            log.info("voted count is {}", voteCount);
+                            //latch.countDown();
                         } catch (Exception e) {
                             e.printStackTrace();
                         } finally {
+                            latch.countDown();
                             tTransport.close();
                         }
                     }).start();
@@ -160,21 +170,37 @@ public class Node {
                 log.info(e.toString());
             }
         }
-        log.info("{}:{} vote count is {} current term is {}",peerConfig.getSelfIp(),peerConfig.getSelfPort(),voteCount, currentTerm);
-        while (true) {
-            if (TimeCounter.checkTimeout(voteStartTime, electiontimeout + 1000)) {
-                int totalPeer = peerSet.size() + 1;
-                if (voteCount > Math.ceil(totalPeer / 2.0)) {
-                    nodeStatus = NodeStatus.LEADER;
-                    leader = self;
-                    log.info("{}:{} becomes leader",peerConfig.getSelfIp(),peerConfig.getSelfPort());
-                } else {
-                    nodeStatus = NodeStatus.FOLLOWER;
-                    startTime = System.currentTimeMillis();
+        //try {
+        //    Thread.sleep(3000);
+        //} catch (InterruptedException e) {
+        //    e.printStackTrace();
+        //}
+        try {
+            latch.await();
+            long voteStartTime = System.currentTimeMillis();
+
+            while (true) {
+                if (TimeCounter.checkTimeout(voteStartTime, electiontimeout)) {
+                    log.info("status is {} {}:{} vote count is {} current term is {}",nodeStatus, peerConfig.getSelfIp(),peerConfig.getSelfPort(),voteCount, currentTerm);
+                    int totalPeer = peerSet.size() + 1;
+                    if (voteCount > Math.ceil(totalPeer / 2.0)) {
+                        if (nodeStatus == NodeStatus.CANDIDATE)
+                            nodeStatus = NodeStatus.LEADER;
+                        else
+                            break;
+                        leader = self;
+                        log.info("{}:{} becomes leader",peerConfig.getSelfIp(),peerConfig.getSelfPort());
+                    } else {
+                        nodeStatus = NodeStatus.FOLLOWER;
+                        startTime = System.currentTimeMillis();
+                    }
+                    break;
                 }
-                break;
             }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
+
     }
 
     private int handleVoted(TTransport tTransport, int lastLogTerm, long lastLogIndex) {
@@ -203,7 +229,6 @@ public class Node {
         long leaderTime = System.currentTimeMillis();
         while (true) {
             if (TimeCounter.checkTimeout(leaderTime, heartBeat)) {
-                log.info("leadertime is " + leaderTime);
                 LogEntry lastOne = logModule.getLastLogEntry();
                 long lastLogIndex;
                 int lastTerm;
@@ -257,8 +282,9 @@ public class Node {
         List<Future<Boolean>> futureList = new CopyOnWriteArrayList<>();
         List<Boolean> resultList = new CopyOnWriteArrayList<>();
         AtomicInteger successNum = new AtomicInteger(0);
-        int count = 0;
-        commitIndex = 0;
+        int count = peerSet.size();
+        //No log is committed yet, since log index begins at 0, thus we initialize it as -1
+        commitIndex = -1;
         for(Peer peer:peerSet){
             TTransport tTransport = GetTTransport.getTTransport(peer.getHost(),peer.getPort(),3000);
             TProtocol protocol = new TBinaryProtocol(tTransport);
@@ -346,7 +372,7 @@ public class Node {
                 String leaderId = self.getHost();
                 long leaderCommit = commitIndex;
                 long nextIndex = nextIndexes.get(slave);
-                LinkedList<LogEntry> entries = new LinkedList<>();
+                List<LogEntry> entries = new ArrayList<>();
                 if(logEntry.getIdex() >= nextIndex){
                     for(long i = nextIndex; i <= logEntry.getIdex();i++){
                         LogEntry curEntry = logModule.read(i);
@@ -355,7 +381,7 @@ public class Node {
                 }else{
                     entries.add(logEntry);
                 }
-                LogEntry prevLogEntry = logModule.getPrev(entries.getFirst());
+                LogEntry prevLogEntry = logModule.getPrev(entries.get(0));
                 //TODO: 初始化的时候prev是空，这里的逻辑还没做，以及接收rpc的结果
                 long prevLogIndex;
                 int prevLogTerm;
