@@ -79,6 +79,7 @@ public class ConsensusImpl implements Consensus.Iface {
         if (term > Node.currentTerm) {
             Node.votedFor = null;
             Node.currentTerm = term;
+            Node.startTime = System.currentTimeMillis();
         }
 
         if (term == Node.currentTerm) {
