@@ -103,6 +103,8 @@ public class ConsensusImpl implements Consensus.Iface {
     }
 
     private boolean prevLogMatch(List<LogEntry> curLogEntries, long prevLogIndex, int prevLogTerm){
+        if(curLogEntries.size() == 0)
+            return true;
         for(LogEntry curLogEntry: curLogEntries) {
             if (curLogEntry.getIdex() == prevLogIndex)
                 return curLogEntry.getTerm() == prevLogTerm;
