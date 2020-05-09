@@ -145,9 +145,10 @@ public class Node {
         }
         CountDownLatch latch = new CountDownLatch(peerSet.size());
         for (Peer peer: peerSet) {
-            TTransport tTransport = GetTTransport.getTTransport(peer.getHost(),peer.getPort(),3000);
+            TTransport tTransport;
             try {
-                if(tTransport!=null){
+                tTransport = GetTTransport.getTTransport(peer.getHost(),peer.getPort(),1000);
+                //if(tTransport!=null){
                     new Thread(() -> {
                         try {
                             int score = handleVoted(tTransport, lastLogTerm, lastLogIndex);
@@ -161,13 +162,15 @@ public class Node {
                         } catch (Exception e) {
                             e.printStackTrace();
                         } finally {
-                            latch.countDown();
+
                             tTransport.close();
                         }
                     }).start();
-                }
+                //}
             } catch (Exception e) {
                 log.info(e.toString());
+            } finally {
+                latch.countDown();
             }
         }
         //try {
