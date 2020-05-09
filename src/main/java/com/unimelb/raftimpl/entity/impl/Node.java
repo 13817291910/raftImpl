@@ -186,8 +186,10 @@ public class Node {
                     if (voteCount > Math.ceil(totalPeer / 2.0)) {
                         if (nodeStatus == NodeStatus.CANDIDATE)
                             nodeStatus = NodeStatus.LEADER;
-                        else
+                        else {
+                            nodeStatus = NodeStatus.FOLLOWER;
                             break;
+                        }
                         leader = self;
                         log.info("{}:{} becomes leader",peerConfig.getSelfIp(),peerConfig.getSelfPort());
                     } else {
@@ -198,9 +200,9 @@ public class Node {
                 }
             }
         } catch (InterruptedException e) {
+            nodeStatus = NodeStatus.FOLLOWER;
             e.printStackTrace();
         }
-
     }
 
     private int handleVoted(TTransport tTransport, int lastLogTerm, long lastLogIndex) {
@@ -261,8 +263,8 @@ public class Node {
                         }
                     });
                 }
-                leaderTime = System.currentTimeMillis();
-                //break;
+                //leaderTime = System.currentTimeMillis();
+                break;
             }
         }
     }

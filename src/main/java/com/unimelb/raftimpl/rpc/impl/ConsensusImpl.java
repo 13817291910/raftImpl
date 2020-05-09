@@ -36,11 +36,13 @@ public class ConsensusImpl implements Consensus.Iface {
             Node.leader = new Peer(leaderHost, leaderPort);
             if (entries == null) {
                 //todo: entries 设为 null，一起测了
-                log.info("get heartbeat successfully");
+
                 Node.startTime = System.currentTimeMillis();
                 result.success = true;
                 result.term = term;
                 Node.nodeStatus = NodeStatus.FOLLOWER;
+                log.info("get heartbeat successfully");
+                log.info("current status is {}", Node.nodeStatus);
             } else {
                 //todo: redirect client request to leader IP
 
@@ -99,9 +101,9 @@ public class ConsensusImpl implements Consensus.Iface {
         if(leaderTerm < Node.currentTerm){
             return false;
         }
-        //else if(!prevLogMatch(curLogEntries, prevLogIndex, prevLogTerm)){
-        //    return false;
-        //}
+        else if(!prevLogMatch(curLogEntries, prevLogIndex, prevLogTerm)){
+            return false;
+        }
         return true;
     }
 
