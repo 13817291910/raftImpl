@@ -48,9 +48,14 @@ public class LogModule {
     public void write(LogEntry logEntry){
         try {
             lock.lock();
-            LogEntry lastEntry = logEntryList.get(logEntryList.size()-1);
-            logEntry.setIdex(lastEntry.getIdex() + 1);
-            logEntryList.add(logEntry);
+            if(logEntryList.size()==0){
+                logEntry.setIdex(0);
+                logEntryList.add(logEntry);
+            }else{
+                LogEntry lastEntry = logEntryList.get(logEntryList.size()-1);
+                logEntry.setIdex(lastEntry.getIdex() + 1);
+                logEntryList.add(logEntry);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

@@ -281,8 +281,9 @@ public class Node {
         List<Future<Boolean>> futureList = new CopyOnWriteArrayList<>();
         List<Boolean> resultList = new CopyOnWriteArrayList<>();
         AtomicInteger successNum = new AtomicInteger(0);
-        int count = 0;
-        commitIndex = 0;
+        int count = peerSet.size();
+        //No log is committed yet, since log index begins at 0, thus we initialize it as -1
+        commitIndex = -1;
         for(Peer peer:peerSet){
             TTransport tTransport = GetTTransport.getTTransport(peer.getHost(),peer.getPort(),3000);
             TProtocol protocol = new TBinaryProtocol(tTransport);
@@ -370,7 +371,7 @@ public class Node {
                 String leaderId = self.getHost();
                 long leaderCommit = commitIndex;
                 long nextIndex = nextIndexes.get(slave);
-                LinkedList<LogEntry> entries = new LinkedList<>();
+                List<LogEntry> entries = new ArrayList<>();
                 if(logEntry.getIdex() >= nextIndex){
                     for(long i = nextIndex; i <= logEntry.getIdex();i++){
                         LogEntry curEntry = logModule.read(i);
@@ -379,7 +380,7 @@ public class Node {
                 }else{
                     entries.add(logEntry);
                 }
-                LogEntry prevLogEntry = logModule.getPrev(entries.getFirst());
+                LogEntry prevLogEntry = logModule.getPrev(entries.get(0));
                 //TODO: 初始化的时候prev是空，这里的逻辑还没做，以及接收rpc的结果
                 long prevLogIndex;
                 int prevLogTerm;

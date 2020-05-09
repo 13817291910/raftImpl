@@ -24,6 +24,7 @@ public class ConsensusImpl implements Consensus.Iface {
                                             long prevLogIndex, int prevLogTerm,
                                             List<LogEntry> entries, long leaderCommit)
                                             throws TException {
+        //todo: thrift connot pass the list parameter
         AppendResult result = new AppendResult();
         List<LogEntry> curLogEntries = LogModule.logEntryList;
         LogModule logModule = LogModule.getInstance();
