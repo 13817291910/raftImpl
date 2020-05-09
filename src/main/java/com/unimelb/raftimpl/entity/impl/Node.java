@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.validation.constraints.Null;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -119,9 +120,7 @@ public class Node {
     }
 
     private void followerWork() {
-      //  log.info("{}:{} is follower",peerConfig.getSelfIp(),peerConfig.getPeersPort());
         if (TimeCounter.checkTimeout(startTime, heartBeat) && TimeCounter.checkTimeout(startTime, electiontimeout)) {
-
             log.info("become candidate");
             nodeStatus = NodeStatus.CANDIDATE;
         }
