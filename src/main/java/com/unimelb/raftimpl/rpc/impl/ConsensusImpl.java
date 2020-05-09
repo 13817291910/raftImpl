@@ -40,6 +40,8 @@ public class ConsensusImpl implements Consensus.Iface {
                 result.success = true;
                 result.term = term;
                 Node.nodeStatus = NodeStatus.FOLLOWER;
+                log.info("get heartbeat successfully");
+                log.info("current status is {}", Node.nodeStatus);
             } else {
                 //todo: redirect client request to leader IP
 
@@ -74,6 +76,11 @@ public class ConsensusImpl implements Consensus.Iface {
         voteResult.setTerm(Node.currentTerm);
         voteResult.setVoteGranted(false);
         if (term > Node.currentTerm) {
+            Node.votedFor = null;
+            Node.currentTerm = term;
+        }
+
+        if (term == Node.currentTerm) {
             if (lastLogIndex >= Node.commitIndex) {
                 LogEntry temp = LogModule.getLastLogEntry();
                 int tempTerm;
@@ -82,7 +89,7 @@ public class ConsensusImpl implements Consensus.Iface {
                 }else{
                     tempTerm = 0;
                 }
-                if (lastLogTerm >= tempTerm) {
+                if (lastLogTerm >= tempTerm && (Node.votedFor == null || Node.votedFor == candidateId)) {
                     //Node.currentTerm = Node.currentTerm + 1;
                     //Node.currentTerm = term;
                     //voteResult.setTerm(Node.currentTerm);

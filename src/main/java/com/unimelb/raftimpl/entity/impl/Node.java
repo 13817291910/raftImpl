@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.validation.constraints.Null;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -119,9 +120,7 @@ public class Node {
     }
 
     private void followerWork() {
-      //  log.info("{}:{} is follower",peerConfig.getSelfIp(),peerConfig.getPeersPort());
         if (TimeCounter.checkTimeout(startTime, heartBeat) && TimeCounter.checkTimeout(startTime, electiontimeout)) {
-
             log.info("become candidate");
             nodeStatus = NodeStatus.CANDIDATE;
         }
@@ -145,9 +144,10 @@ public class Node {
         }
         CountDownLatch latch = new CountDownLatch(peerSet.size());
         for (Peer peer: peerSet) {
-            TTransport tTransport = GetTTransport.getTTransport(peer.getHost(),peer.getPort(),3000);
+            TTransport tTransport;
             try {
-                if(tTransport!=null){
+                tTransport = GetTTransport.getTTransport(peer.getHost(),peer.getPort(),1000);
+                //if(tTransport!=null){
                     new Thread(() -> {
                         try {
                             int score = handleVoted(tTransport, lastLogTerm, lastLogIndex);
@@ -161,13 +161,15 @@ public class Node {
                         } catch (Exception e) {
                             e.printStackTrace();
                         } finally {
-                            latch.countDown();
+
                             tTransport.close();
                         }
                     }).start();
-                }
+                //}
             } catch (Exception e) {
                 log.info(e.toString());
+            } finally {
+                latch.countDown();
             }
         }
         //try {
@@ -186,8 +188,10 @@ public class Node {
                     if (voteCount > Math.ceil(totalPeer / 2.0)) {
                         if (nodeStatus == NodeStatus.CANDIDATE)
                             nodeStatus = NodeStatus.LEADER;
-                        else
+                        else {
+                            nodeStatus = NodeStatus.FOLLOWER;
                             break;
+                        }
                         leader = self;
                         log.info("{}:{} becomes leader",peerConfig.getSelfIp(),peerConfig.getSelfPort());
                     } else {
@@ -198,9 +202,9 @@ public class Node {
                 }
             }
         } catch (InterruptedException e) {
+            nodeStatus = NodeStatus.FOLLOWER;
             e.printStackTrace();
         }
-
     }
 
     private int handleVoted(TTransport tTransport, int lastLogTerm, long lastLogIndex) {
@@ -261,8 +265,8 @@ public class Node {
                         }
                     });
                 }
-                leaderTime = System.currentTimeMillis();
-                //break;
+                //leaderTime = System.currentTimeMillis();
+                break;
             }
         }
     }
