@@ -50,11 +50,13 @@ public class ConsensusImpl implements Consensus.Iface {
                 long delIndex = firstAppendEntry.getIdex();
                 log.info("logModule.logEntryList.size is {}", LogModule.logEntryList.size());
                 log.info("need to delete {} entries", LogModule.logEntryList.size() - delIndex);
-                logModule.delete(delIndex);//todo: test
+                logModule.delete(delIndex);
                 log.info("logModule.logEntryList.size change to {}", LogModule.logEntryList.size());
+                log.info("need to add {} entries", entries.size());
                 for(LogEntry entry: entries){
                     logModule.write(entry);
                 }
+                log.info("logModule.logEntryList.size change to {}", LogModule.logEntryList.size());
                 log.info("write log to logModule successfully");
 
                 if(leaderCommit > Node.commitIndex){
@@ -65,6 +67,8 @@ public class ConsensusImpl implements Consensus.Iface {
                     writeToStateMachine(curLogEntries);
                     Node.lastApplied = Node.commitIndex;
                 }
+                result.success = true;
+                result.term = term;
             }
         } else {
             result.success = false;
