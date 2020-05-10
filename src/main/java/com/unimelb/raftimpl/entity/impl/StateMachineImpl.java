@@ -20,7 +20,7 @@ public class StateMachineImpl implements StateMachine {
     public synchronized void apply(LogEntry logEntry) {
         Log log = new Log();
         BeanUtils.copyProperties(logEntry, log);
-        //logDao.insertLog(log.getIndex(), log.getTerm(), log.getLog());
+        logDao.insertLog((int)log.getIndex(), log.getTerm(), log.getLog());
     }
 
     @Override

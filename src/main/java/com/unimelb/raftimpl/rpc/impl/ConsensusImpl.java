@@ -125,6 +125,7 @@ public class ConsensusImpl implements Consensus.Iface {
     @Transactional
     public void writeToStateMachine(List<LogEntry> curLogEntries) {
         for(int index = (int)Node.lastApplied + 1; index <= Node.commitIndex; index++){
+            log.info("start adding log {} to state machine", curLogEntries.get(index).toString());
             Node.stateMachine.apply(curLogEntries.get(index));
             log.info("add log {} to state machine successfully", curLogEntries.get(index).toString());
         }
