@@ -34,6 +34,7 @@ public class ConsensusImpl implements Consensus.Iface {
             //int leaderPort = Integer.getInteger(leaderInfo[1])
             int leaderPort = Integer.valueOf(leaderInfo[1]);
             Node.leader = new Peer(leaderHost, leaderPort);
+            Node.currentTerm = term;
             if (entries == null) {
                 log.info("get heartbeat successfully");
                 Node.startTime = System.currentTimeMillis();
@@ -47,8 +48,10 @@ public class ConsensusImpl implements Consensus.Iface {
 
                 LogEntry firstAppendEntry = entries.get(0);
                 long delIndex = firstAppendEntry.getIdex();
-                logModule.delete(delIndex);
-
+                log.info("logModule.logEntryList.size is {}", LogModule.logEntryList.size());
+                log.info("need to delete {} entries", LogModule.logEntryList.size() - delIndex);
+                logModule.delete(delIndex);//todo: test
+                log.info("logModule.logEntryList.size change to {}", LogModule.logEntryList.size());
                 for(LogEntry entry: entries){
                     logModule.write(entry);
                 }

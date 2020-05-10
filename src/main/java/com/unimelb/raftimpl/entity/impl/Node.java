@@ -94,15 +94,17 @@ public class Node {
         nextIndexes = new HashMap<>();
         matchIndexes = new HashMap<>();
         peerSet = new HashSet<>();
+        //todo: nextIndexes/matchIndexes/lastApplied/commitIndex NEED to be updated everytime started
         for(int i=0;i<peersIp.length;i++){
             Peer curPeer = new Peer(peersIp[i],peersPort[i]);
             peerSet.add(curPeer);
-            matchIndexes.put(curPeer,0L);
+            matchIndexes.put(curPeer,-1L);
             nextIndexes.put(curPeer,0L);
         }
         log.info("the connected peers are {}",peerSet.toString());
         currentTerm = 0;
-        lastApplied = 0;
+        commitIndex = -1;
+        lastApplied = -1;
         new Thread(()->{
             log.info("get into loop");
             log.info("election time out is {}", electiontimeout);
@@ -288,7 +290,8 @@ public class Node {
         AtomicInteger successNum = new AtomicInteger(0);
         int count = peerSet.size();
         //No log is committed yet, since log index begins at 0, thus we initialize it as -1
-        commitIndex = -1;
+        //initialized in startPeer
+//        commitIndex = -1;
         for(Peer peer:peerSet){
             TTransport tTransport = GetTTransport.getTTransport(peer.getHost(),peer.getPort(),3000);
             TProtocol protocol = new TBinaryProtocol(tTransport);
