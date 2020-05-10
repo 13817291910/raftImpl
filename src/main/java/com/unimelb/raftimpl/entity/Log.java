@@ -9,4 +9,10 @@ public class Log {
     private long index;
     private int term;
     private String log;
+
+    public String toString() {
+        return "index is " + index
+                + " term is " + term
+                + " log is " + log;
+    }
 }

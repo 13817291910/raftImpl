@@ -1,17 +1,21 @@
 package com.unimelb.raftimpl.controller;
 
 import com.unimelb.raftimpl.entity.CommonMsg;
+import com.unimelb.raftimpl.entity.Log;
 import com.unimelb.raftimpl.entity.LogModule;
 import com.unimelb.raftimpl.entity.impl.Node;
 import com.unimelb.raftimpl.rpc.LogEntry;
+import com.unimelb.raftimpl.service.LogService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-@Controller
+import java.util.List;
+
+@RestController
 public class MainController {
 
     private static final Logger log = LoggerFactory.getLogger(MainController.class);
@@ -21,6 +25,9 @@ public class MainController {
 
     @Autowired
     private LogModule logModule;
+
+    @Autowired
+    private LogService logService;
 
     @RequestMapping("/send")
     CommonMsg send(@RequestParam String text){
@@ -45,4 +52,30 @@ public class MainController {
         return msg;
     }
 
+
+
+    @RequestMapping("/find")
+    public String testFind() {
+        List<Log> logList =  logService.selectAllLog();
+        String s = null;
+        for (Log log : logList) {
+            s = s + log.toString();
+        }
+        return s;
+    }
+
+    @RequestMapping("/insert")
+    public String insertIt() {
+        try {
+            logService.insertService();
+            return "true";
+        } catch (Exception e) {
+            return "false";
+        }
+    }
+
+    @RequestMapping("/hello")
+    public String hello() {
+        return "hello";
+    }
 }
