@@ -6,13 +6,13 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Log {
-    private long index;
+    private long idex;
     private int term;
-    private String log;
+    private String text;
 
     public String toString() {
-        return "index is " + index
+        return "index is " + idex
                 + " term is " + term
-                + " log is " + log;
+                + " log is " + text;
     }
 }

@@ -73,7 +73,7 @@ public class Node {
 
     private static Set<Peer> peerSet;
 
-    public static StateMachine stateMachine;
+    public static StateMachine stateMachine = new StateMachineImpl();
 
     @Autowired
     private LogModule logModule;
@@ -304,7 +304,7 @@ public class Node {
                 @Override
                 public void run() {
                     try {
-                        resultList.add(future.get(2000, TimeUnit.MILLISECONDS));
+                        resultList.add(future.get(3000, TimeUnit.MILLISECONDS));
                     } catch (InterruptedException  | ExecutionException | TimeoutException e) {
                         e.printStackTrace();
                         resultList.add(false);
@@ -405,8 +405,12 @@ public class Node {
                                                             prevLogIndex,prevLogTerm,
                                                             entries,leaderCommit);
                 if (appendResult.isSuccess()){
+                    long lastReplicatedIndex = entries.get(entries.size()-1).idex;
+                    nextIndexes.put(slave,lastReplicatedIndex + 1);
+                    matchIndexes.put(slave,lastReplicatedIndex);
                     return true;
                 }else{
+                    //todo: nextIndex need to decrease by 1 to find the start point
                     return false;
                 }
             }

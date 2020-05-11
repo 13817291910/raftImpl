@@ -6,25 +6,35 @@ import com.unimelb.raftimpl.entity.StateMachine;
 import com.unimelb.raftimpl.rpc.LogEntry;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.util.LinkedList;
 import java.util.List;
 
-
+@Component
 public class StateMachineImpl implements StateMachine {
 
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     @Autowired
     private LogDao logDao;
+
+    private static LogDao staticLogDao;
 
     @Override
     public synchronized void apply(LogEntry logEntry) {
         Log log = new Log();
         BeanUtils.copyProperties(logEntry, log);
-        logDao.insertLog((int)log.getIndex(), log.getTerm(), log.getLog());
+        staticLogDao.insertLog((int)log.getIdex(), log.getTerm(), log.getText());
     }
 
     @Override
     public synchronized List<Log> read() {
-        return logDao.findAllLog();
+        return staticLogDao.findAllLog();
+    }
+
+    @PostConstruct
+    public void init(){
+        staticLogDao = this.logDao;
     }
 }

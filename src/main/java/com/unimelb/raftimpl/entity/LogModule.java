@@ -70,7 +70,6 @@ public class LogModule {
     public static LogEntry getPrev(LogEntry logEntry){
         if(logEntry.getIdex() == 0) return null;
         LogEntry prevLogEntry = read(logEntry.getIdex()-1);
-//        return prevLogEntry==null?null:prevLogEntry;
         return prevLogEntry;
     }
 
