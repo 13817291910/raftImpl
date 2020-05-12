@@ -1,10 +1,8 @@
 package com.unimelb.raftimpl.entity.impl;
 
 import com.unimelb.raftimpl.config.PeerConfig;
-import com.unimelb.raftimpl.entity.CommonMsg;
-import com.unimelb.raftimpl.entity.LogModule;
-import com.unimelb.raftimpl.entity.Server;
-import com.unimelb.raftimpl.entity.StateMachine;
+import com.unimelb.raftimpl.dao.LogDao;
+import com.unimelb.raftimpl.entity.*;
 import com.unimelb.raftimpl.enumerate.NodeStatus;
 import com.unimelb.raftimpl.rpc.AppendResult;
 import com.unimelb.raftimpl.rpc.Consensus;
@@ -22,6 +20,7 @@ import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -80,6 +79,10 @@ public class Node {
     @Autowired
     private LogModule logModule;
 
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+    @Autowired
+    private LogDao logDao;
+
     public static long electiontimeout;
     public static volatile long startTime;
     public static volatile int voteCount;
@@ -100,17 +103,24 @@ public class Node {
         nextIndexes = new HashMap<>();
         matchIndexes = new HashMap<>();
         peerSet = new HashSet<>();
-        //todo: nextIndexes/matchIndexes/lastApplied/commitIndex NEED to be updated everytime started
+        // load the data in state machine to the memory
+        List<Log> logs = logDao.findAllLog();
+        if(logs != null){
+            for(Log log:logs){
+                LogEntry logEntry = new LogEntry();
+                BeanUtils.copyProperties(log,logEntry);
+                LogModule.logEntryList.add(logEntry);
+            }
+        }
+        long lastIndex =  lastApplied = commitIndex = (logs==null?-1:logs.get(logs.size()-1).getIdex());
         for(int i=0;i<peersIp.length;i++){
             Peer curPeer = new Peer(peersIp[i],peersPort[i]);
             peerSet.add(curPeer);
             matchIndexes.put(curPeer,-1L);
-            nextIndexes.put(curPeer,0L);
+            nextIndexes.put(curPeer,lastIndex + 1);
         }
         log.info("the connected peers are {}",peerSet.toString());
         currentTerm = 0;
-        commitIndex = -1;
-        lastApplied = -1;
         new Thread(()->{
             log.info("get into loop");
             log.info("election time out is {}", electiontimeout);
@@ -239,6 +249,20 @@ public class Node {
 
     private void leaderWork() {
         long leaderTime = System.currentTimeMillis();
+        List<Log> logs = logDao.findAllLog();
+        if(logs != null){
+            for(Log log:logs){
+                LogEntry logEntry = new LogEntry();
+                BeanUtils.copyProperties(log,logEntry);
+                LogModule.logEntryList.add(logEntry);
+            }
+        }
+        long lastIndex =  lastApplied = commitIndex = (logs==null?-1:logs.get(logs.size()-1).getIdex());
+        for(Peer curPeer:peerSet){
+            matchIndexes.put(curPeer,-1L);
+            nextIndexes.put(curPeer,lastIndex + 1);
+        }
+        log.info("the connected peers are {}",peerSet.toString());
         while (true) {
             if (TimeCounter.checkTimeout(leaderTime, heartBeat)) {
                 LogEntry lastOne = logModule.getLastLogEntry();
