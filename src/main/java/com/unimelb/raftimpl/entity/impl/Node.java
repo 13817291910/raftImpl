@@ -31,6 +31,8 @@ import javax.validation.constraints.Null;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Component
 @Getter
@@ -81,6 +83,10 @@ public class Node {
     public static long electiontimeout;
     public static volatile long startTime;
     public static volatile int voteCount;
+
+    //THis is the lock that is used for synchronizing the retry of replication(decrease next index by 1)
+    // when the first attempt fails
+    public static final Lock lock = new ReentrantLock();
 
     @PostConstruct
     public void startPeer() {
@@ -376,45 +382,80 @@ public class Node {
             public Boolean call() throws Exception {
                 //Compute all the parameters that rpc method handleAppendEntries needs
                 int term = currentTerm;
-                String leaderId = self.getHost();
+                String leaderId = self.toString();
                 long leaderCommit = commitIndex;
-                long nextIndex = nextIndexes.get(slave);
-                List<LogEntry> entries = new ArrayList<>();
-                if(logEntry.getIdex() >= nextIndex){
-                    for(long i = nextIndex; i <= logEntry.getIdex();i++){
-                        LogEntry curEntry = logModule.read(i);
-                        if(curEntry!=null) entries.add(curEntry);
-                    }
-                }else{
-                    entries.add(logEntry);
-                }
+                List<LogEntry> entries = getReplicateEntries(slave,logEntry);
                 LogEntry prevLogEntry = logModule.getPrev(entries.get(0));
-                //TODO: 初始化的时候prev是空，这里的逻辑还没做，以及接收rpc的结果
                 long prevLogIndex;
                 int prevLogTerm;
-                if(prevLogEntry==null){
-                    prevLogIndex = 0;
-                    prevLogTerm = 0;
-                }else{
-                    prevLogIndex = prevLogEntry.getIdex();
-                    prevLogTerm = prevLogEntry.getTerm();
-                }
+                prevLogIndex = getPrevLogIndex(prevLogEntry);
+                prevLogTerm = getPrevLogTerm(prevLogEntry);
                 log.info("handleAppendEntries parameter: term:{},leaderId:{},prevLogIndex:{},prevLogTerm:{},entries:{},leaderCommit:{}"
                         ,term,leaderId,prevLogTerm,prevLogIndex,entries,leaderCommit);
                 AppendResult appendResult = client.handleAppendEntries(term,leaderId,
                                                             prevLogIndex,prevLogTerm,
                                                             entries,leaderCommit);
+                long lastReplicatedIndex = entries.get(entries.size()-1).idex;
                 if (appendResult.isSuccess()){
-                    long lastReplicatedIndex = entries.get(entries.size()-1).idex;
                     nextIndexes.put(slave,lastReplicatedIndex + 1);
                     matchIndexes.put(slave,lastReplicatedIndex);
                     return true;
                 }else{
-                    //todo: nextIndex need to decrease by 1 to find the start point
+                    //if the master fail to replicate to the slave server, it decrease the corresponding
+                    // next index by 1, and retry again and again until it success.
+                    lock.lock();
+                    try {
+                        AppendResult appendResultAgain = new AppendResult();
+                        appendResultAgain.setSuccess(false);
+                        while(!appendResultAgain.isSuccess()){
+                            nextIndexes.put(slave,lastReplicatedIndex - 1);
+                            entries = getReplicateEntries(slave,logEntry);
+                            prevLogEntry = LogModule.getPrev(entries.get(0));
+                            prevLogIndex = getPrevLogIndex(prevLogEntry);
+                            prevLogTerm = getPrevLogTerm(prevLogEntry);
+                            appendResultAgain = client.handleAppendEntries(term,leaderId,prevLogIndex,
+                                    prevLogTerm,entries,leaderCommit);
+                        }
+                    } finally {
+                        lock.unlock();
+                    }
                     return false;
                 }
             }
         });
     }
 
+    private List<LogEntry> getReplicateEntries(Peer slave,LogEntry logEntry){
+        long nextIndex = nextIndexes.get(slave);
+        List<LogEntry> entries = new ArrayList<>();
+        if(logEntry.getIdex() >= nextIndex){
+            for(long i = nextIndex; i <= logEntry.getIdex();i++){
+                LogEntry curEntry = logModule.read(i);
+                if(curEntry!=null) entries.add(curEntry);
+            }
+        }else{
+            entries.add(logEntry);
+        }
+        return entries;
+    }
+
+    private int getPrevLogTerm(LogEntry prevLogEntry){
+        int prevLogTerm;
+        if(prevLogEntry==null){
+            prevLogTerm = 0;
+        }else{
+            prevLogTerm = prevLogEntry.getTerm();
+        }
+        return prevLogTerm;
+    }
+
+    private long getPrevLogIndex(LogEntry prevLogEntry){
+        long prevLogIndex;
+        if(prevLogEntry==null){
+            prevLogIndex = 0;
+        }else{
+            prevLogIndex = prevLogEntry.getIdex();
+        }
+        return prevLogIndex;
+    }
 }
