@@ -255,13 +255,13 @@ public class Node {
         if(!leaderFirstInitialize) {
             try {
                 List<Log> logs = logDao.findAllLog();
-                if (logs != null) {
-                    for (Log log : logs) {
-                        LogEntry logEntry = new LogEntry();
-                        BeanUtils.copyProperties(log, logEntry);
-                        LogModule.logEntryList.add(logEntry);
-                    }
-                }
+//                if (logs != null) {
+//                    for (Log log : logs) {
+//                        LogEntry logEntry = new LogEntry();
+//                        BeanUtils.copyProperties(log, logEntry);
+//                        LogModule.logEntryList.add(logEntry);
+//                    }
+//                }
                 long lastIndex = lastApplied = commitIndex = (logs == null ? -1 : logs.get(logs.size() - 1).getIdex());
                 for (Peer curPeer : peerSet) {
                     matchIndexes.put(curPeer, -1L);
