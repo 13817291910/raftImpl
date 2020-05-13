@@ -21,6 +21,7 @@ import org.apache.thrift.transport.TTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -90,6 +91,8 @@ public class Node {
     //THis is the lock that is used for synchronizing the retry of replication(decrease next index by 1)
     // when the first attempt fails
     public static final Lock lock = new ReentrantLock();
+
+    private boolean leaderFirstInitialize;
 
     @PostConstruct
     public void startPeer() {
@@ -249,18 +252,26 @@ public class Node {
 
     private void leaderWork() {
         long leaderTime = System.currentTimeMillis();
-        List<Log> logs = logDao.findAllLog();
-        if(logs != null){
-            for(Log log:logs){
-                LogEntry logEntry = new LogEntry();
-                BeanUtils.copyProperties(log,logEntry);
-                LogModule.logEntryList.add(logEntry);
+        if(!leaderFirstInitialize) {
+            try {
+                List<Log> logs = logDao.findAllLog();
+                if (logs != null) {
+                    for (Log log : logs) {
+                        LogEntry logEntry = new LogEntry();
+                        BeanUtils.copyProperties(log, logEntry);
+                        LogModule.logEntryList.add(logEntry);
+                    }
+                }
+                long lastIndex = lastApplied = commitIndex = (logs == null ? -1 : logs.get(logs.size() - 1).getIdex());
+                for (Peer curPeer : peerSet) {
+                    matchIndexes.put(curPeer, -1L);
+                    nextIndexes.put(curPeer, lastIndex + 1);
+                }
+                leaderFirstInitialize = true;
+            } catch (Exception e) {
+                log.error("the leader fails to load statemachine");
+                e.printStackTrace();
             }
-        }
-        long lastIndex =  lastApplied = commitIndex = (logs==null?-1:logs.get(logs.size()-1).getIdex());
-        for(Peer curPeer:peerSet){
-            matchIndexes.put(curPeer,-1L);
-            nextIndexes.put(curPeer,lastIndex + 1);
         }
         log.info("the connected peers are {}",peerSet.toString());
         while (true) {
