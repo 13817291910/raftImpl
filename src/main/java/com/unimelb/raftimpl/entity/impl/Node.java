@@ -276,17 +276,20 @@ public class Node {
         log.info("the connected peers are {}",peerSet.toString());
         while (true) {
             if (TimeCounter.checkTimeout(leaderTime, heartBeat)) {
-                LogEntry lastOne = logModule.getLastLogEntry();
-                long lastLogIndex;
-                int lastTerm;
-                if (lastOne == null) {
-                    lastLogIndex = 0;
-                    lastTerm = 0;
-                } else {
-                    lastLogIndex = lastOne.getIdex();
-                    lastTerm = lastOne.getTerm();
-                }
+
+//                LogEntry lastOne = logModule.getLastLogEntry();
+//                if (lastOne == null) {
+//                    lastLogIndex = 0;
+//                    lastTerm = 0;
+//                } else {
+//                    lastLogIndex = lastOne.getIdex();
+//                    lastTerm = lastOne.getTerm();
+//                }
                 for (Peer peer: peerSet) {
+                    long lastLogIndex;
+                    int lastTerm;
+                    lastLogIndex = nextIndexes.get(peer) - 1;
+                    lastTerm = LogModule.logEntryList.get((int)lastLogIndex).getTerm();
                     ThreadPoolManager.getInstance().execute(()->{
                         TTransport tTransport = null;
                         try {
