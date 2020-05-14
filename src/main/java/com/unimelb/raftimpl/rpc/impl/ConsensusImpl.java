@@ -45,14 +45,18 @@ public class ConsensusImpl implements Consensus.Iface {
                 Node.nodeStatus = NodeStatus.FOLLOWER;
                 log.info("get heartbeat successfully");
                 log.info("current status is {}", Node.nodeStatus);
-                if (leaderCommit >= Node.commitIndex) {
-                    List<LogEntry> tempList = Node.logModule.logEntryList;
+                log.info("leadercommit is {}, slave commit is {}", leaderCommit, Node.lastApplied);
+                if (leaderCommit >= Node.lastApplied) {
+                    LogModule nodeLogModule = Node.getLogModule();
+                    List<LogEntry> tempList = nodeLogModule.logEntryList;
                     List<LogEntry> commitOne = new LinkedList<>();
                     for (LogEntry logEntry : tempList) {
-                        if (logEntry.getIdex() > Node.commitIndex && logEntry.getIdex() <= leaderCommit)
+                        if (logEntry.getIdex() > Node.lastApplied && logEntry.getIdex() <= leaderCommit)
                             commitOne.add(logEntry);
                     }
-                    for (LogEntry commitTemp : tempList) {
+                    log.info("slave need consensus");
+                    for (LogEntry commitTemp : commitOne) {
+                        log.info("commitTemp is {}", commitTemp.toString());
                         StateMachine stateMachine = new StateMachineImpl();
                         stateMachine.apply(commitTemp);
                     }

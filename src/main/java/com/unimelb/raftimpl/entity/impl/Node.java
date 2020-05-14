@@ -78,7 +78,7 @@ public class Node {
     public static StateMachine stateMachine = new StateMachineImpl();
 
     @Autowired
-    public static LogModule logModule;
+    private LogModule logModule;
 
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     @Autowired
@@ -98,8 +98,8 @@ public class Node {
     public void startPeer() {
         log.info("startPeer is starting");
         self = new Peer(peerConfig.getSelfIp(),peerConfig.getSelfPort());
-        electiontimeout = (long) NumberGenerator.generateNumber(6000, 9000);
-        //electiontimeout = 3500;
+        //electiontimeout = (long) NumberGenerator.generateNumber(6000, 9000);
+        electiontimeout = 3500;
         nodeStatus = NodeStatus.FOLLOWER;
         String[] peersIp = peerConfig.getPeersIp();
         int[] peersPort = peerConfig.getPeersPort();
@@ -497,5 +497,9 @@ public class Node {
             prevLogIndex = prevLogEntry.getIdex();
         }
         return prevLogIndex;
+    }
+
+    public static LogModule getLogModule() {
+        return LogModule.getInstance();
     }
 }
