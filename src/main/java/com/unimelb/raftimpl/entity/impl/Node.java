@@ -498,8 +498,4 @@ public class Node {
         }
         return prevLogIndex;
     }
-
-    public static LogModule getLogModule() {
-        return LogModule.getInstance();
-    }
 }

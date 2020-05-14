@@ -47,8 +47,7 @@ public class ConsensusImpl implements Consensus.Iface {
                 log.info("current status is {}", Node.nodeStatus);
                 log.info("leadercommit is {}, slave commit is {}", leaderCommit, Node.lastApplied);
                 if (leaderCommit >= Node.lastApplied) {
-                    LogModule nodeLogModule = Node.getLogModule();
-                    List<LogEntry> tempList = nodeLogModule.logEntryList;
+                    List<LogEntry> tempList = LogModule.logEntryList;
                     List<LogEntry> commitOne = new LinkedList<>();
                     for (LogEntry logEntry : tempList) {
                         if (logEntry.getIdex() > Node.lastApplied && logEntry.getIdex() <= leaderCommit)
