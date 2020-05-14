@@ -288,8 +288,8 @@ public class Node {
                 for (Peer peer: peerSet) {
                     long lastLogIndex;
                     int lastTerm;
-                    lastLogIndex = nextIndexes.get(peer) - 1;
-                    lastTerm = LogModule.logEntryList.get((int)lastLogIndex).getTerm();
+                    lastLogIndex = 0;
+                    lastTerm = 0;
                     ThreadPoolManager.getInstance().execute(()->{
                         TTransport tTransport = null;
                         try {

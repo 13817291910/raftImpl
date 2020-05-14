@@ -27,7 +27,7 @@ public class ConsensusImpl implements Consensus.Iface {
         AppendResult result = new AppendResult();
         List<LogEntry> curLogEntries = LogModule.logEntryList;
         LogModule logModule = LogModule.getInstance();
-        if (checkValidMsg(term, prevLogIndex, prevLogTerm, curLogEntries)) {
+        if (checkValidMsg(term, prevLogIndex, prevLogTerm, curLogEntries,entries)) {
             String[] leaderInfo = leaderId.split(":");
             String leaderHost = leaderInfo[0].trim();
             //int leaderPort = Integer.getInteger(leaderInfo[1])
@@ -108,11 +108,11 @@ public class ConsensusImpl implements Consensus.Iface {
         return voteResult;
     }
 
-    private boolean checkValidMsg(int leaderTerm, long prevLogIndex, int prevLogTerm, List<LogEntry> curLogEntries) {
+    private boolean checkValidMsg(int leaderTerm, long prevLogIndex, int prevLogTerm, List<LogEntry> curLogEntries,List<LogEntry> entries) {
         if(leaderTerm < Node.currentTerm){
             return false;
         }
-        else if(!prevLogMatch(curLogEntries, prevLogIndex, prevLogTerm)){
+        else if( entries != null && !prevLogMatch(curLogEntries, prevLogIndex, prevLogTerm)){
             return false;
         }
         return true;
