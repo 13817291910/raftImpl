@@ -1,8 +1,10 @@
 package com.unimelb.raftimpl.rpc.impl;
 
 import com.unimelb.raftimpl.entity.LogModule;
+import com.unimelb.raftimpl.entity.StateMachine;
 import com.unimelb.raftimpl.entity.impl.Node;
 import com.unimelb.raftimpl.entity.impl.Peer;
+import com.unimelb.raftimpl.entity.impl.StateMachineImpl;
 import com.unimelb.raftimpl.enumerate.NodeStatus;
 import com.unimelb.raftimpl.rpc.AppendResult;
 import com.unimelb.raftimpl.rpc.Consensus;
@@ -13,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedList;
 import java.util.List;
 
 
@@ -42,6 +45,18 @@ public class ConsensusImpl implements Consensus.Iface {
                 Node.nodeStatus = NodeStatus.FOLLOWER;
                 log.info("get heartbeat successfully");
                 log.info("current status is {}", Node.nodeStatus);
+                if (leaderCommit >= Node.commitIndex) {
+                    List<LogEntry> tempList = Node.logModule.logEntryList;
+                    List<LogEntry> commitOne = new LinkedList<>();
+                    for (LogEntry logEntry : tempList) {
+                        if (logEntry.getIdex() > Node.commitIndex && logEntry.getIdex() <= leaderCommit)
+                            commitOne.add(logEntry);
+                    }
+                    for (LogEntry commitTemp : tempList) {
+                        StateMachine stateMachine = new StateMachineImpl();
+                        stateMachine.apply(commitTemp);
+                    }
+                }
             } else {
                 //todo: redirect client request to leader IP
 

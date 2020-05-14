@@ -78,7 +78,7 @@ public class Node {
     public static StateMachine stateMachine = new StateMachineImpl();
 
     @Autowired
-    private LogModule logModule;
+    public static LogModule logModule;
 
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     @Autowired
@@ -146,6 +146,7 @@ public class Node {
             log.info("become candidate");
             nodeStatus = NodeStatus.CANDIDATE;
         }
+
     }
 
     private void candidateWork() {
