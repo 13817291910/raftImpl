@@ -58,6 +58,7 @@ public class ConsensusImpl implements Consensus.Iface {
                         log.info("commitTemp is {}", commitTemp.toString());
                         StateMachine stateMachine = new StateMachineImpl();
                         stateMachine.apply(commitTemp);
+                        Node.lastApplied++;
                     }
                 }
             } else {

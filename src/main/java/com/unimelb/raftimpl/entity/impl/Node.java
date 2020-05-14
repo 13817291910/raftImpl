@@ -98,8 +98,8 @@ public class Node {
     public void startPeer() {
         log.info("startPeer is starting");
         self = new Peer(peerConfig.getSelfIp(),peerConfig.getSelfPort());
-        //electiontimeout = (long) NumberGenerator.generateNumber(6000, 9000);
-        electiontimeout = 3500;
+        electiontimeout = (long) NumberGenerator.generateNumber(6000, 9000);
+        //electiontimeout = 3500;
         nodeStatus = NodeStatus.FOLLOWER;
         String[] peersIp = peerConfig.getPeersIp();
         int[] peersPort = peerConfig.getPeersPort();
