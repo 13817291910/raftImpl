@@ -208,7 +208,7 @@ public class Node {
                 if (TimeCounter.checkTimeout(voteStartTime, electiontimeout)) {
                     log.info("status is {} {}:{} vote count is {} current term is {}",nodeStatus, peerConfig.getSelfIp(),peerConfig.getSelfPort(),voteCount, currentTerm);
                     int totalPeer = peerSet.size() + 1;
-                    if (voteCount >= Math.ceil(totalPeer / 2.0)) {
+                    if (voteCount > Math.floor(totalPeer / 2.0)) {
                         if (nodeStatus == NodeStatus.CANDIDATE)
                             nodeStatus = NodeStatus.LEADER;
                         else {
