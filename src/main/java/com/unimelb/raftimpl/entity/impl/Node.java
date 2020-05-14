@@ -108,14 +108,14 @@ public class Node {
         peerSet = new HashSet<>();
         // load the data in state machine to the memory
         List<Log> logs = logDao.findAllLog();
-        if(logs != null){
+        if(!logs.isEmpty()){
             for(Log log:logs){
                 LogEntry logEntry = new LogEntry();
                 BeanUtils.copyProperties(log,logEntry);
                 LogModule.logEntryList.add(logEntry);
             }
         }
-        long lastIndex =  lastApplied = commitIndex = (logs==null?-1:logs.get(logs.size()-1).getIdex());
+        long lastIndex =  lastApplied = commitIndex = (logs.isEmpty()?-1:logs.get(logs.size()-1).getIdex());
         for(int i=0;i<peersIp.length;i++){
             Peer curPeer = new Peer(peersIp[i],peersPort[i]);
             peerSet.add(curPeer);
@@ -262,7 +262,7 @@ public class Node {
 //                        LogModule.logEntryList.add(logEntry);
 //                    }
 //                }
-                long lastIndex = lastApplied = commitIndex = (logs == null ? -1 : logs.get(logs.size() - 1).getIdex());
+                long lastIndex = lastApplied = commitIndex = (logs.isEmpty() ? -1 : logs.get(logs.size() - 1).getIdex());
                 for (Peer curPeer : peerSet) {
                     matchIndexes.put(curPeer, -1L);
                     nextIndexes.put(curPeer, lastIndex + 1);
