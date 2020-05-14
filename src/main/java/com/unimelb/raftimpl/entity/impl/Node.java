@@ -446,7 +446,7 @@ public class Node {
                         AppendResult appendResultAgain = new AppendResult();
                         appendResultAgain.setSuccess(false);
                         while(!appendResultAgain.isSuccess()){
-                            nextIndexes.put(slave,lastReplicatedIndex - 1);
+                            nextIndexes.put(slave,nextIndexes.get(slave) - 1);
                             entries = getReplicateEntries(slave,logEntry);
                             prevLogEntry = LogModule.getPrev(entries.get(0));
                             prevLogIndex = getPrevLogIndex(prevLogEntry);
