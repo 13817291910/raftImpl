@@ -1,0 +1,27 @@
+{
+  "name": "da-logging-server",
+  "version": "1.0.0",
+  "description": "distributed algorithm mock server",
+  "main": "index.js",
+  "scripts": {
+    "server": "nodemon index.js",
+    "client": "npm run start --prefix da-logging",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/martin-luo/DALogging.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/martin-luo/DALogging/issues"
+  },
+  "homepage": "https://github.com/martin-luo/DALogging#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "concurrently": "^5.2.0",
+    "express": "^4.17.1",
+    "nodemon": "^2.0.3"
+  }
+}

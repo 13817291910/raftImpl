@@ -1,0 +1,37 @@
+#App-header {
+  padding: 0.5rem 1rem;
+  background-color: #001529;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#App-header > span {
+  font-size: 1.5rem;
+}
+
+#App-header section ul {
+  display: flex;
+  list-style: none;
+  margin-bottom: 0;
+}
+
+#App-header section button {
+  margin: 0.5rem;
+  padding: 0.5rem;
+  background-color: transparent;
+}
+
+#App-header section button:hover {
+  cursor: pointer;
+}
+
+#App-header section button a {
+  color: white;
+  text-decoration: none;
+}
+
+section.body {
+  margin: 2rem;
+}
