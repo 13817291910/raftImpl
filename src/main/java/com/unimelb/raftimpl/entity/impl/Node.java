@@ -98,7 +98,8 @@ public class Node {
     public void startPeer() {
         log.info("startPeer is starting");
         self = new Peer(peerConfig.getSelfIp(),peerConfig.getSelfPort());
-        electiontimeout = (long) NumberGenerator.generateNumber(6000, 9000);
+        //electiontimeout = (long) NumberGenerator.generateNumber(6000, 9000);
+        electiontimeout = 3500;
         nodeStatus = NodeStatus.FOLLOWER;
         String[] peersIp = peerConfig.getPeersIp();
         int[] peersPort = peerConfig.getPeersPort();
@@ -206,7 +207,7 @@ public class Node {
                 if (TimeCounter.checkTimeout(voteStartTime, electiontimeout)) {
                     log.info("status is {} {}:{} vote count is {} current term is {}",nodeStatus, peerConfig.getSelfIp(),peerConfig.getSelfPort(),voteCount, currentTerm);
                     int totalPeer = peerSet.size() + 1;
-                    if (voteCount > Math.ceil(totalPeer / 2.0)) {
+                    if (voteCount >= Math.ceil(totalPeer / 2.0)) {
                         if (nodeStatus == NodeStatus.CANDIDATE)
                             nodeStatus = NodeStatus.LEADER;
                         else {

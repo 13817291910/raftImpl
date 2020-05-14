@@ -9,9 +9,7 @@ import com.unimelb.raftimpl.service.LogService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -29,8 +27,8 @@ public class MainController {
     @Autowired
     private LogService logService;
 
-    @RequestMapping("/send")
-    CommonMsg send(@RequestParam String text){
+    @PostMapping("/api/send")
+    CommonMsg send(@RequestBody String text){
         log.info("the front end send the text {}",text);
             try {
                 LogEntry curEntry = new LogEntry();
@@ -45,37 +43,37 @@ public class MainController {
             }
     }
 
-    @RequestMapping("/read")
-    CommonMsg read(){
-        String text = LogModule.logEntryList.toString();
-        CommonMsg msg = CommonMsg.builder().msg(text).build();
-        return msg;
-    }
+    //@RequestMapping("/read")
+    //CommonMsg read(){
+    //    String text = LogModule.logEntryList.toString();
+    //    CommonMsg msg = CommonMsg.builder().msg(text).build();
+    //    return msg;
+    //}
 
 
 
-    @RequestMapping("/find")
-    public String testFind() {
+    @RequestMapping("/api/find")
+    public List<Log> findAll() {
         List<Log> logList =  logService.selectAllLog();
-        String s = null;
-        for (Log log : logList) {
-            s = s + log.toString();
-        }
-        return s;
+        //String s = null;
+        //for (Log log : logList) {
+        //    s = s + log.toString();
+        //}
+        return logList;
     }
 
-    @RequestMapping("/insert")
-    public String insertIt() {
-        try {
-            logService.insertService();
-            return "true";
-        } catch (Exception e) {
-            return "false";
-        }
-    }
-
-    @RequestMapping("/hello")
-    public String hello() {
-        return "hello";
-    }
+    //@RequestMapping("/insert")
+    //public String insertIt() {
+    //    try {
+    //        logService.insertService();
+    //        return "true";
+    //    } catch (Exception e) {
+    //        return "false";
+    //    }
+    //}
+    //
+    //@RequestMapping("/hello")
+    //public String hello() {
+    //    return "hello";
+    //}
 }
